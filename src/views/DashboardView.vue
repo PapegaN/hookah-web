@@ -4,8 +4,8 @@ import { computed } from 'vue'
 import { useAppDataStore } from '@/stores/app-data'
 import { useSessionStore } from '@/stores/session'
 
-const sessionStore = useSessionStore()
 const appDataStore = useAppDataStore()
+const sessionStore = useSessionStore()
 
 const roleTitle = computed(() => {
   switch (sessionStore.currentUser?.role) {
@@ -25,19 +25,19 @@ const quickFacts = computed(() => [
     id: 'users',
     label: 'Пользователи',
     value: `${appDataStore.users.length}`,
-    hint: 'Администратор видит список ролей, контактов и доступов.',
+    hint: 'Администратор видит роли, статусы апрува и контакты.',
   },
   {
     id: 'tobaccos',
     label: 'Табаки',
     value: `${appDataStore.references.tobaccos.length}`,
-    hint: 'Справочник редактируется во вкладках с таблицами и модальными формами.',
+    hint: 'Бренды и вкусы редактируются во вкладках с таблицами и модалками.',
   },
   {
     id: 'orders',
     label: 'Заказы',
     value: `${appDataStore.orders.length}`,
-    hint: 'Теперь заказ привязан к столу и может включать сразу несколько клиентов.',
+    hint: 'Заказы разделены по столам и объединяют сразу нескольких гостей.',
   },
 ])
 
@@ -45,21 +45,21 @@ const roleTasks = computed(() => {
   switch (sessionStore.currentUser?.role) {
     case 'admin':
       return [
-        'Поддерживать пользователей, роли и табличные справочники в актуальном состоянии.',
-        'Следить за уведомлениями о новых заказах и быстро переводить стол в работу.',
-        'Контролировать историю статусов и отзывы по каждому столу.',
+        'Подтверждать регистрации и открывать доступ новым пользователям.',
+        'Держать справочники табака и оборудования в аккуратном состоянии.',
+        'Контролировать историю заказов, статусы и отзывы по каждому столу.',
       ]
     case 'hookah_master':
       return [
-        'Забирать новые заказы со стола из всплывающих уведомлений.',
-        'Вносить фактическую забивку и комментарий мастера перед выдачей.',
-        'Отслеживать, кто из гостей уже оставил отзыв после отдачи заказа.',
+        'Забирать новые заказы со стола через удобные вкладки и уведомления.',
+        'Подтверждать гостей за столом перед работой с заказом.',
+        'Фиксировать фактическую забивку и отдавать заказ в клиентский статус.',
       ]
     case 'client':
       return [
-        'Выбрать стол и присоединиться к общей забивке со своими пожеланиями.',
-        'Следить за временем заказа, отдачи и историей изменений по столу.',
-        'После выдачи оставить личную оценку и отзыв.',
+        'После апрува выбрать стол и собрать заказ из палитры вкусов.',
+        'Следить за подтверждением своего места за столом и ходом заказа.',
+        'После отдачи поставить оценку и оставить осознанный отзыв.',
       ]
     default:
       return []
@@ -71,32 +71,32 @@ const roleTasks = computed(() => {
   <section class="hero-card">
     <div>
       <p class="section-label">Role workspace</p>
-      <h2>{{ roleTitle }} в панели Hookah Lounge Control</h2>
+      <h2>{{ roleTitle }} в Hookah Lounge Control</h2>
       <p class="section-copy">
-        Панель уже работает как demo full-stack контур: роли, регистрация, табличные
-        справочники, заказы по столам, история статусов и персональные отзывы гостей.
+        Панель уже работает как полноценный demo-контур: регистрация с апрувом, табличные
+        справочники, заказы по столам, подтверждение гостей и отзывы после выдачи.
       </p>
     </div>
 
     <div class="hero-card__badge">
       <span>{{ appDataStore.orders.length }}</span>
-      <p>заказов сейчас видно в текущей зоне ответственности</p>
+      <p>заказов сейчас видно в вашей зоне ответственности</p>
     </div>
   </section>
 
-  <section class="grid">
-    <article v-for="fact in quickFacts" :key="fact.id" class="metric-card">
-      <p class="section-label">{{ fact.label }}</p>
-      <strong>{{ fact.value }}</strong>
-      <span>{{ fact.hint }}</span>
+  <div class="task-list">
+    <article v-for="fact in quickFacts" :key="fact.id" class="task-card">
+      <p class="task-card__status">{{ fact.label }}</p>
+      <h3>{{ fact.value }}</h3>
+      <p>{{ fact.hint }}</p>
     </article>
-  </section>
+  </div>
 
   <section class="panel">
     <div class="panel__header">
       <div>
         <p class="section-label">Следующие действия</p>
-        <h3>Что доступно в текущем MVP</h3>
+        <h3>Что доступно прямо сейчас</h3>
       </div>
     </div>
 
@@ -104,7 +104,7 @@ const roleTasks = computed(() => {
       <article v-for="task in roleTasks" :key="task" class="task-card">
         <p class="task-card__status">{{ roleTitle }}</p>
         <h4>{{ task }}</h4>
-        <p>Экран уже связан с role-based API и общим состоянием заказов.</p>
+        <p>Экран уже связан с role-based API и общим состоянием панели.</p>
       </article>
     </div>
   </section>

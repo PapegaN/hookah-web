@@ -1,6 +1,7 @@
 import type {
   AppUser,
   AuthResponse,
+  CreateUserPayload,
   CreateOrderPayload,
   DemoAccountsResponse,
   FulfillOrderPayload,
@@ -81,6 +82,13 @@ export const api = {
       token,
     })
   },
+  createUser(token: string, payload: CreateUserPayload) {
+    return request<AppUser>('/users', {
+      method: 'POST',
+      token,
+      body: JSON.stringify(payload),
+    })
+  },
   updateUser(token: string, userId: string, payload: UpdateUserPayload) {
     return request<AppUser>(`/users/${userId}`, {
       method: 'PATCH',
@@ -121,6 +129,11 @@ export const api = {
       token,
     })
   },
+  getOrder(token: string, orderId: string) {
+    return request<OrderView>(`/orders/${orderId}`, {
+      token,
+    })
+  },
   createOrder(token: string, payload: CreateOrderPayload) {
     return request<OrderView>('/orders', {
       method: 'POST',
@@ -130,6 +143,12 @@ export const api = {
   },
   startOrder(token: string, orderId: string) {
     return request<OrderView>(`/orders/${orderId}/start`, {
+      method: 'PATCH',
+      token,
+    })
+  },
+  approveParticipantTable(token: string, orderId: string, clientUserId: string) {
+    return request<OrderView>(`/orders/${orderId}/participants/${clientUserId}/approve-table`, {
       method: 'PATCH',
       token,
     })

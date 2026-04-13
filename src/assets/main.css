@@ -588,6 +588,10 @@ select.input:focus {
     var(--shadow);
 }
 
+.field__control {
+  display: grid;
+}
+
 .status-banner--error {
   border-color: rgba(161, 69, 54, 0.24);
   background: rgba(255, 245, 242, 0.94);

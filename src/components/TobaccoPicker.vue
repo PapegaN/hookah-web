@@ -2,11 +2,7 @@
 import { computed, reactive } from 'vue'
 
 import type { TobaccoReference } from '@/types/app'
-import {
-  filterTobaccos,
-  mergeTobaccoSelection,
-  removeTobaccoSelection,
-} from '@/utils/tobacco'
+import { filterTobaccos, mergeTobaccoSelection, removeTobaccoSelection } from '@/utils/tobacco'
 
 const props = defineProps<{
   title: string
@@ -29,7 +25,9 @@ const filters = reactive({
 const selectionLimit = computed(() => props.limit ?? 3)
 
 const brandOptions = computed(() =>
-  [...new Set(props.tobaccos.map((tobacco) => tobacco.brand))].sort(),
+  [...new Set(props.tobaccos.map((tobacco) => tobacco.brand))].sort((left, right) =>
+    left.localeCompare(right, 'ru'),
+  ),
 )
 
 const filteredTobaccos = computed(() => filterTobaccos(props.tobaccos, filters))
@@ -84,18 +82,14 @@ function removeTobacco(tobaccoId: string) {
           v-model="filters.search"
           class="input"
           type="text"
-          placeholder="Например, mint, mango, pear..."
+          placeholder="Например: mint, mango, pear..."
         />
       </label>
     </div>
 
     <div class="picker-layout">
       <div class="picker-results">
-        <article
-          v-for="tobacco in filteredTobaccos"
-          :key="tobacco.id"
-          class="catalog-card"
-        >
+        <article v-for="tobacco in filteredTobaccos" :key="tobacco.id" class="catalog-card">
           <div>
             <p class="catalog-card__eyebrow">{{ tobacco.brand }} / {{ tobacco.line }}</p>
             <h4>{{ tobacco.flavorName }}</h4>
@@ -103,7 +97,7 @@ function removeTobacco(tobaccoId: string) {
           </div>
 
           <div class="pill-row">
-            <span class="pill">Крепость линии: {{ tobacco.lineStrengthLevel }}/5</span>
+            <span class="pill">Крепость линейки: {{ tobacco.lineStrengthLevel }}/5</span>
             <span class="pill">Оценка: {{ tobacco.estimatedStrengthLevel }}/5</span>
             <span class="pill">Яркость: {{ tobacco.brightnessLevel }}/5</span>
           </div>
@@ -111,9 +105,7 @@ function removeTobacco(tobaccoId: string) {
           <button
             class="button button--secondary"
             type="button"
-            :disabled="
-              selectedIds.includes(tobacco.id) || selectedIds.length >= selectionLimit
-            "
+            :disabled="selectedIds.includes(tobacco.id) || selectedIds.length >= selectionLimit"
             @click="addTobacco(tobacco.id)"
           >
             {{ selectedIds.includes(tobacco.id) ? 'Уже выбран' : 'Добавить вкус' }}
@@ -128,11 +120,7 @@ function removeTobacco(tobaccoId: string) {
         </div>
 
         <div v-if="selectedTobaccos.length > 0" class="selection-list">
-          <article
-            v-for="tobacco in selectedTobaccos"
-            :key="tobacco.id"
-            class="selection-list__item"
-          >
+          <article v-for="tobacco in selectedTobaccos" :key="tobacco.id" class="selection-list__item">
             <div>
               <strong>{{ tobacco.flavorName }}</strong>
               <p>{{ tobacco.brand }} / {{ tobacco.line }}</p>
@@ -144,7 +132,8 @@ function removeTobacco(tobaccoId: string) {
         </div>
 
         <p v-else class="section-copy">
-          Добавьте до трех вкусов. Они будут отображаться столбиком и уйдут в заказ.
+          Добавьте до трёх вкусов. Они будут отображаться столбиком и уйдут в заказ вместе с вашим
+          описанием.
         </p>
       </aside>
     </div>

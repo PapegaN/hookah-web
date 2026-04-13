@@ -22,6 +22,12 @@ const registerForm = reactive({
   telegramUsername: '',
 })
 
+const roleLabels = {
+  admin: 'Администратор',
+  hookah_master: 'Кальянный мастер',
+  client: 'Клиент',
+}
+
 onMounted(() => {
   void sessionStore.loadDemoAccounts().catch(() => undefined)
 })
@@ -29,9 +35,12 @@ onMounted(() => {
 async function submitLogin() {
   await sessionStore.login(loginForm)
 
-  const redirectTarget =
-    typeof route.query.redirect === 'string' ? route.query.redirect : '/'
+  if (!sessionStore.currentUser?.isApproved) {
+    await router.push('/pending-approval')
+    return
+  }
 
+  const redirectTarget = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
   await router.push(redirectTarget)
 }
 
@@ -42,7 +51,7 @@ async function submitRegister() {
     email: registerForm.email || undefined,
     telegramUsername: registerForm.telegramUsername || undefined,
   })
-  await router.push('/client/order/new')
+  await router.push('/pending-approval')
 }
 
 function fillDemoAccount(login: string, password: string) {
@@ -50,37 +59,30 @@ function fillDemoAccount(login: string, password: string) {
   loginForm.password = password
   mode.value = 'login'
 }
-
-const roleLabels = {
-  admin: 'Администратор',
-  hookah_master: 'Кальянный мастер',
-  client: 'Клиент',
-}
 </script>
 
 <template>
   <div class="auth-layout">
     <section class="auth-hero">
       <p class="eyebrow">Hookah Admin Panel</p>
-      <h1>Адаптивная административная панель кальянной</h1>
+      <h1>Панель управления кальянной</h1>
       <p>
-        Один интерфейс для администратора, мастера и клиента: управление
-        пользователями, справочниками и заказами от выбора вкусов до оценки
-        готового кальяна.
+        Один адаптивный интерфейс для администратора, мастера и клиента: пользователи, табличные
+        справочники, заказы по столам, подтверждение гостей и сбор отзывов после отдачи заказа.
       </p>
 
       <div class="hero-highlights">
         <article class="hero-highlights__item">
           <strong>Админ</strong>
-          <span>Пользователи, роли и редактирование справочников.</span>
+          <span>Управляет пользователями, ролями, апрувом доступа и справочниками.</span>
         </article>
         <article class="hero-highlights__item">
           <strong>Мастер</strong>
-          <span>Рабочий борд заказов и фактическая забивка.</span>
+          <span>Видит новые, текущие и завершённые заказы, подтверждает гостей за столом.</span>
         </article>
         <article class="hero-highlights__item">
           <strong>Клиент</strong>
-          <span>Конструктор вкусов, ожидание заказа и отзыв.</span>
+          <span>Регистрируется, ждёт апрув, собирает заказ и оставляет личный отзыв.</span>
         </article>
       </div>
     </section>
@@ -154,10 +156,15 @@ const roleLabels = {
           <input v-model="registerForm.telegramUsername" class="input" type="text" />
         </label>
 
+        <p class="section-copy">
+          После регистрации аккаунт попадёт в очередь на апрув. Доступ к клиентской зоне откроется
+          после подтверждения администратором.
+        </p>
+
         <p v-if="sessionStore.errorMessage" class="form-error">{{ sessionStore.errorMessage }}</p>
 
         <button class="button button--primary" type="submit" :disabled="sessionStore.isSubmitting">
-          Создать аккаунт клиента
+          Отправить на апрув
         </button>
       </form>
 

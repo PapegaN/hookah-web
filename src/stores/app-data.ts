@@ -4,6 +4,7 @@ import { defineStore } from 'pinia'
 import { ApiError, api } from '@/lib/api'
 import type {
   AppUser,
+  CreateUserPayload,
   CreateOrderPayload,
   OrderNotification,
   OrderView,
@@ -55,7 +56,7 @@ export const useAppDataStore = defineStore('app-data', () => {
         currentUser,
         notify: false,
       })
-      users.value = usersResponse
+      users.value = sortUsers(usersResponse)
     } catch (error) {
       errorMessage.value =
         error instanceof ApiError
@@ -92,7 +93,12 @@ export const useAppDataStore = defineStore('app-data', () => {
 
   async function updateUser(token: string, userId: string, payload: UpdateUserPayload) {
     const updatedUser = await api.updateUser(token, userId, payload)
-    users.value = users.value.map((user) => (user.id === userId ? updatedUser : user))
+    users.value = sortUsers(users.value.map((user) => (user.id === userId ? updatedUser : user)))
+  }
+
+  async function createUser(token: string, payload: CreateUserPayload) {
+    const createdUser = await api.createUser(token, payload)
+    users.value = sortUsers([createdUser, ...users.value.filter((user) => user.id !== createdUser.id)])
   }
 
   async function createReference(
@@ -121,6 +127,11 @@ export const useAppDataStore = defineStore('app-data', () => {
 
   async function startOrder(token: string, orderId: string) {
     const updatedOrder = await api.startOrder(token, orderId)
+    replaceOrder(updatedOrder)
+  }
+
+  async function approveParticipantTable(token: string, orderId: string, clientUserId: string) {
+    const updatedOrder = await api.approveParticipantTable(token, orderId, clientUserId)
     replaceOrder(updatedOrder)
   }
 
@@ -198,9 +209,11 @@ export const useAppDataStore = defineStore('app-data', () => {
     refreshOrders,
     reset,
     updateUser,
+    createUser,
     createReference,
     updateReference,
     createOrder,
+    approveParticipantTable,
     startOrder,
     fulfillOrder,
     submitFeedback,
@@ -211,6 +224,12 @@ export const useAppDataStore = defineStore('app-data', () => {
 
 function sortOrders(items: OrderView[]) {
   return items.slice().sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+}
+
+function sortUsers(items: AppUser[]) {
+  return items
+    .slice()
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
 }
 
 function buildOrderSnapshots(items: OrderView[]) {

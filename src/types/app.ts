@@ -5,9 +5,17 @@ export type OrderStatus = 'new' | 'in_progress' | 'ready_for_feedback' | 'rated'
 export type OrderTimelineEventType =
   | 'created'
   | 'participant_joined'
+  | 'participant_table_approved'
   | 'started'
   | 'delivered'
   | 'feedback_received'
+
+export type TableApprovalStatus = 'pending' | 'approved'
+
+export interface UserPreview {
+  id: string
+  login: string
+}
 
 export type ReferenceEntityType =
   | 'tobaccos'
@@ -22,6 +30,9 @@ export interface AppUser {
   role: UserRole
   email?: string
   telegramUsername?: string
+  isApproved: boolean
+  approvedAt?: string
+  approvedBy?: UserPreview
   createdAt: string
   updatedAt: string
 }
@@ -94,6 +105,9 @@ export interface OrderParticipant {
   description: string
   joinedAt: string
   requestedTobaccos: TobaccoReference[]
+  tableApprovalStatus: TableApprovalStatus
+  tableApprovedAt?: string
+  tableApprovedBy?: UserPreview
   feedback?: OrderFeedback
 }
 
@@ -156,6 +170,16 @@ export interface UpdateUserPayload {
   role?: UserRole
   email?: string
   telegramUsername?: string
+  isApproved?: boolean
+}
+
+export interface CreateUserPayload {
+  login: string
+  password: string
+  role: UserRole
+  email?: string
+  telegramUsername?: string
+  isApproved?: boolean
 }
 
 export interface UpsertReferencePayload {

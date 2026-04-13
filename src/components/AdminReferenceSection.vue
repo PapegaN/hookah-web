@@ -34,6 +34,22 @@ const modalTitle = computed(() =>
   editingItemId.value ? `Редактировать: ${props.title}` : `Добавить: ${props.title}`,
 )
 
+const suggestionsByField = computed<Record<string, string[]>>(() =>
+  Object.fromEntries(
+    props.fields.map((field) => [
+      field.key,
+      [
+        ...new Set(
+          props.items
+            .map((item) => item[field.key as keyof EditableReferenceItem])
+            .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+            .map((value) => value.trim()),
+        ),
+      ].sort((left, right) => left.localeCompare(right, 'ru')),
+    ]),
+  ),
+)
+
 function buildEmptyDraft(): FormState {
   return Object.fromEntries(
     props.fields.map((field) => [
@@ -69,7 +85,7 @@ function closeModal() {
   Object.assign(modalDraft, buildEmptyDraft())
 }
 
-async function submitModal() {
+function submitModal() {
   const payload = normalizeDraft(modalDraft)
 
   if (editingItemId.value) {
@@ -126,6 +142,10 @@ function updateNumberValue(draft: FormState, key: string, event: Event) {
 function updateBooleanValue(draft: FormState, key: string, event: Event) {
   draft[key] = (event.target as HTMLInputElement).checked
 }
+
+function getSuggestionListId(key: string) {
+  return `${props.entityType}-${key}-suggestions`
+}
 </script>
 
 <template>
@@ -167,7 +187,7 @@ function updateBooleanValue(draft: FormState, key: string, event: Event) {
 
           <tr v-if="items.length === 0">
             <td :colspan="columns.length + 1" class="data-table__empty">
-              Пока нет записей для этого справочника.
+              Пока в этом справочнике нет записей.
             </td>
           </tr>
         </tbody>
@@ -225,23 +245,41 @@ function updateBooleanValue(draft: FormState, key: string, event: Event) {
             </template>
 
             <template v-else>
-              <input
-                :value="
-                  field.kind === 'number'
-                    ? getNumberValue(modalDraft, field.key)
-                    : getTextValue(modalDraft, field.key)
-                "
-                class="input"
-                :type="field.kind === 'number' ? 'number' : 'text'"
-                :min="field.min"
-                :max="field.max"
-                :step="field.step ?? 1"
-                @input="
-                  field.kind === 'number'
-                    ? updateNumberValue(modalDraft, field.key, $event)
-                    : updateTextValue(modalDraft, field.key, $event)
-                "
-              />
+              <div class="field__control">
+                <input
+                  :value="
+                    field.kind === 'number'
+                      ? getNumberValue(modalDraft, field.key)
+                      : getTextValue(modalDraft, field.key)
+                  "
+                  class="input"
+                  :type="field.kind === 'number' ? 'number' : 'text'"
+                  :list="
+                    field.kind === 'text' && (suggestionsByField[field.key]?.length ?? 0) > 0
+                      ? getSuggestionListId(field.key)
+                      : undefined
+                  "
+                  :min="field.min"
+                  :max="field.max"
+                  :step="field.step ?? 1"
+                  @input="
+                    field.kind === 'number'
+                      ? updateNumberValue(modalDraft, field.key, $event)
+                      : updateTextValue(modalDraft, field.key, $event)
+                  "
+                />
+
+                <datalist
+                  v-if="field.kind === 'text' && (suggestionsByField[field.key]?.length ?? 0) > 0"
+                  :id="getSuggestionListId(field.key)"
+                >
+                  <option
+                    v-for="suggestion in suggestionsByField[field.key]"
+                    :key="suggestion"
+                    :value="suggestion"
+                  />
+                </datalist>
+              </div>
             </template>
           </label>
         </div>

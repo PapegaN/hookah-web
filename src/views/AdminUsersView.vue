@@ -1,12 +1,29 @@
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { computed, reactive, ref } from 'vue'
 
 import { useAppDataStore } from '@/stores/app-data'
 import { useSessionStore } from '@/stores/session'
-import type { AppUser, UserRole } from '@/types/app'
+import type { AppUser, CreateUserPayload, UpdateUserPayload, UserRole } from '@/types/app'
+import { formatDateTime } from '@/utils/date'
+
+type UserFilterTab = 'pending' | 'approved' | 'all'
+
+interface UserDraft {
+  login: string
+  password: string
+  role: UserRole
+  email: string
+  telegramUsername: string
+  isApproved: boolean
+}
 
 const sessionStore = useSessionStore()
 const appDataStore = useAppDataStore()
+
+const activeTab = ref<UserFilterTab>('pending')
+const isModalOpen = ref(false)
+const editingUserId = ref<string | null>(null)
+const modalDraft = reactive<UserDraft>(buildDraft())
 
 const roleOptions: Array<{ value: UserRole; label: string }> = [
   { value: 'admin', label: 'Администратор' },
@@ -14,51 +31,106 @@ const roleOptions: Array<{ value: UserRole; label: string }> = [
   { value: 'client', label: 'Клиент' },
 ]
 
-interface UserDraft {
-  login: string
-  role: UserRole
-  email: string
-  telegramUsername: string
-}
+const tabItems = computed(() => [
+  {
+    key: 'pending' as const,
+    label: 'Ожидают апрув',
+    count: appDataStore.users.filter((user) => !user.isApproved).length,
+  },
+  {
+    key: 'approved' as const,
+    label: 'Подтверждённые',
+    count: appDataStore.users.filter((user) => user.isApproved).length,
+  },
+  {
+    key: 'all' as const,
+    label: 'Все',
+    count: appDataStore.users.length,
+  },
+])
 
-const drafts = reactive<Record<string, UserDraft>>({})
+const filteredUsers = computed(() => {
+  switch (activeTab.value) {
+    case 'pending':
+      return appDataStore.users.filter((user) => !user.isApproved)
+    case 'approved':
+      return appDataStore.users.filter((user) => user.isApproved)
+    default:
+      return appDataStore.users
+  }
+})
 
-function buildDraft(user: AppUser): UserDraft {
+const modalTitle = computed(() =>
+  editingUserId.value ? 'Редактировать пользователя' : 'Добавить пользователя',
+)
+
+function buildDraft(user?: AppUser): UserDraft {
   return {
-    login: user.login,
-    role: user.role,
-    email: user.email ?? '',
-    telegramUsername: user.telegramUsername ?? '',
+    login: user?.login ?? '',
+    password: '',
+    role: user?.role ?? 'client',
+    email: user?.email ?? '',
+    telegramUsername: user?.telegramUsername ?? '',
+    isApproved: user?.isApproved ?? true,
   }
 }
 
-function getDraft(user: AppUser): UserDraft {
-  let draft = drafts[user.id]
-
-  if (!draft) {
-    draft = buildDraft(user)
-    drafts[user.id] = draft
-  }
-
-  return draft
+function openCreateModal() {
+  editingUserId.value = null
+  Object.assign(modalDraft, buildDraft())
+  isModalOpen.value = true
 }
 
-async function saveUser(userId: string) {
+function openEditModal(user: AppUser) {
+  editingUserId.value = user.id
+  Object.assign(modalDraft, buildDraft(user))
+  isModalOpen.value = true
+}
+
+function closeModal() {
+  isModalOpen.value = false
+  editingUserId.value = null
+  Object.assign(modalDraft, buildDraft())
+}
+
+async function submitModal() {
   if (!sessionStore.accessToken) {
     return
   }
 
-  const draft = drafts[userId]
+  if (editingUserId.value) {
+    const payload: UpdateUserPayload = {
+      login: modalDraft.login.trim(),
+      role: modalDraft.role,
+      email: modalDraft.email.trim() || undefined,
+      telegramUsername: modalDraft.telegramUsername.trim() || undefined,
+      isApproved: modalDraft.isApproved,
+    }
 
-  if (!draft) {
+    await appDataStore.updateUser(sessionStore.accessToken, editingUserId.value, payload)
+  } else {
+    const payload: CreateUserPayload = {
+      login: modalDraft.login.trim(),
+      password: modalDraft.password,
+      role: modalDraft.role,
+      email: modalDraft.email.trim() || undefined,
+      telegramUsername: modalDraft.telegramUsername.trim() || undefined,
+      isApproved: modalDraft.isApproved,
+    }
+
+    await appDataStore.createUser(sessionStore.accessToken, payload)
+  }
+
+  closeModal()
+}
+
+async function approveUser(user: AppUser) {
+  if (!sessionStore.accessToken) {
     return
   }
 
-  await appDataStore.updateUser(sessionStore.accessToken, userId, {
-    login: draft.login,
-    role: draft.role,
-    email: draft.email || undefined,
-    telegramUsername: draft.telegramUsername || undefined,
+  await appDataStore.updateUser(sessionStore.accessToken, user.id, {
+    isApproved: true,
   })
 }
 </script>
@@ -68,34 +140,123 @@ async function saveUser(userId: string) {
     <div class="panel__header">
       <div>
         <p class="section-label">Admin users</p>
-        <h2>Управление пользователями</h2>
+        <h2>Пользователи и доступы</h2>
       </div>
-      <p class="section-copy">
-        Администратор может менять роль, контакты и логин пользователя. Пока
-        регистрация создает клиентов, а дефолтный пользователь `admin/admin`
-        доступен сразу.
-      </p>
+      <button class="button button--primary" type="button" @click="openCreateModal">
+        Добавить пользователя
+      </button>
     </div>
 
-    <div class="stack">
-      <article v-for="user in appDataStore.users" :key="user.id" class="editor-card">
-        <div class="editor-card__header">
+    <p class="section-copy">
+      Регистрация теперь создаёт пользователя без доступа. Администратор может подтвердить
+      аккаунт, скорректировать роль и добавить новых пользователей вручную из этой таблицы.
+    </p>
+
+    <div class="tab-row">
+      <button
+        v-for="tab in tabItems"
+        :key="tab.key"
+        class="tab-row__button"
+        :class="{ 'tab-row__button--active': activeTab === tab.key }"
+        type="button"
+        @click="activeTab = tab.key"
+      >
+        {{ tab.label }} · {{ tab.count }}
+      </button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="table-shell">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Логин</th>
+            <th scope="col">Роль</th>
+            <th scope="col">Статус</th>
+            <th scope="col">Контакты</th>
+            <th scope="col">Апрув</th>
+            <th scope="col">Действия</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr v-for="user in filteredUsers" :key="user.id">
+            <td>
+              <strong>{{ user.login }}</strong>
+              <p class="section-copy">{{ formatDateTime(user.createdAt) }}</p>
+            </td>
+            <td>{{ roleOptions.find((option) => option.value === user.role)?.label ?? user.role }}</td>
+            <td>
+              <span class="pill" :class="{ 'pill--muted': !user.isApproved }">
+                {{ user.isApproved ? 'Подтверждён' : 'Ожидает апрув' }}
+              </span>
+            </td>
+            <td>
+              <p>{{ user.email ?? 'Email не указан' }}</p>
+              <p>{{ user.telegramUsername ?? 'Telegram не указан' }}</p>
+            </td>
+            <td>
+              <p>{{ formatDateTime(user.approvedAt) }}</p>
+              <p v-if="user.approvedBy" class="section-copy">Подтвердил: {{ user.approvedBy.login }}</p>
+            </td>
+            <td>
+              <div class="pill-row">
+                <button class="button button--ghost" type="button" @click="openEditModal(user)">
+                  Изменить
+                </button>
+                <button
+                  v-if="!user.isApproved"
+                  class="button button--secondary"
+                  type="button"
+                  @click="approveUser(user)"
+                >
+                  Апрувнуть
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <tr v-if="filteredUsers.length === 0">
+            <td colspan="6" class="data-table__empty">
+              В этой вкладке пока нет пользователей.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <Teleport to="body">
+    <div v-if="isModalOpen" class="modal-overlay" @click.self="closeModal">
+      <section class="modal-card">
+        <div class="panel__header">
           <div>
-            <p class="section-label">User</p>
-            <h3>{{ user.login }}</h3>
+            <p class="section-label">User editor</p>
+            <h3>{{ modalTitle }}</h3>
           </div>
-          <span class="pill">{{ user.role }}</span>
+          <button class="button button--ghost" type="button" @click="closeModal">Закрыть</button>
         </div>
 
         <div class="editor-grid">
           <label class="field">
             <span>Логин</span>
-            <input v-model="getDraft(user).login" class="input" type="text" />
+            <input v-model="modalDraft.login" class="input" type="text" autocomplete="username" />
+          </label>
+
+          <label v-if="!editingUserId" class="field">
+            <span>Пароль</span>
+            <input
+              v-model="modalDraft.password"
+              class="input"
+              type="password"
+              autocomplete="new-password"
+            />
           </label>
 
           <label class="field">
             <span>Роль</span>
-            <select v-model="getDraft(user).role" class="input">
+            <select v-model="modalDraft.role" class="input">
               <option v-for="option in roleOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
               </option>
@@ -104,19 +265,27 @@ async function saveUser(userId: string) {
 
           <label class="field">
             <span>Email</span>
-            <input v-model="getDraft(user).email" class="input" type="email" />
+            <input v-model="modalDraft.email" class="input" type="email" autocomplete="email" />
           </label>
 
           <label class="field">
             <span>Telegram</span>
-            <input v-model="getDraft(user).telegramUsername" class="input" type="text" />
+            <input v-model="modalDraft.telegramUsername" class="input" type="text" />
+          </label>
+
+          <label class="field">
+            <span>Доступ открыт</span>
+            <input v-model="modalDraft.isApproved" class="toggle" type="checkbox" />
           </label>
         </div>
 
-        <button class="button button--secondary" type="button" @click="saveUser(user.id)">
-          Сохранить пользователя
-        </button>
-      </article>
+        <div class="modal-actions">
+          <button class="button button--ghost" type="button" @click="closeModal">Отмена</button>
+          <button class="button button--primary" type="button" @click="submitModal">
+            Сохранить
+          </button>
+        </div>
+      </section>
     </div>
-  </section>
+  </Teleport>
 </template>

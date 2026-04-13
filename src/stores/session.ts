@@ -57,7 +57,7 @@ export const useSessionStore = defineStore('session', () => {
       setSession(response.accessToken, response.user)
     } catch (error) {
       errorMessage.value =
-        error instanceof ApiError ? 'Не удалось войти. Проверь логин и пароль.' : 'Ошибка входа'
+        error instanceof ApiError ? 'Не удалось войти. Проверьте логин и пароль.' : 'Ошибка входа'
       throw error
     } finally {
       isSubmitting.value = false

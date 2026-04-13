@@ -20,6 +20,10 @@ const roleLabels = {
 }
 
 const navigationItems = computed(() => {
+  if (sessionStore.currentUser?.isApproved === false) {
+    return [{ name: 'Ожидание доступа', to: '/pending-approval' }]
+  }
+
   const sharedItems = [{ name: 'Обзор', to: '/' }]
 
   switch (sessionStore.currentUser?.role) {
@@ -54,8 +58,14 @@ const isLoadingSession = computed(
 )
 
 watch(
-  () => [sessionStore.accessToken, sessionStore.currentUser?.id, sessionStore.isInitialized] as const,
-  async ([accessToken, userId, isInitialized]) => {
+  () =>
+    [
+      sessionStore.accessToken,
+      sessionStore.currentUser?.id,
+      sessionStore.currentUser?.isApproved,
+      sessionStore.isInitialized,
+    ] as const,
+  async ([accessToken, userId, isApproved, isInitialized]) => {
     if (!isInitialized) {
       sessionStore.hydrateFromStorage()
       return
@@ -67,7 +77,7 @@ watch(
       return
     }
 
-    if (bootstrappedForUserId.value === userId) {
+    if (bootstrappedForUserId.value === userId && isApproved) {
       return
     }
 
@@ -75,6 +85,12 @@ watch(
       await sessionStore.syncProfile()
 
       if (!sessionStore.accessToken || !sessionStore.currentUser) {
+        return
+      }
+
+      if (!sessionStore.currentUser.isApproved) {
+        appDataStore.reset()
+        bootstrappedForUserId.value = null
         return
       }
 
@@ -99,10 +115,11 @@ watch(
       sessionStore.accessToken,
       sessionStore.currentUser?.id,
       sessionStore.currentUser?.role,
+      sessionStore.currentUser?.isApproved,
       bootstrappedForUserId.value,
     ] as const,
-  ([accessToken, userId, role, bootstrappedUserId], _previous, onCleanup) => {
-    if (!accessToken || !userId || !role || bootstrappedUserId !== userId) {
+  ([accessToken, userId, role, isApproved, bootstrappedUserId], _previous, onCleanup) => {
+    if (!accessToken || !userId || !role || !isApproved || bootstrappedUserId !== userId) {
       return
     }
 
@@ -140,12 +157,7 @@ async function handleLogout() {
 
 async function openNotification(orderId: string, notificationId: string) {
   appDataStore.dismissNotification(notificationId)
-  await router.push({
-    path: '/staff/orders',
-    query: {
-      orderId,
-    },
-  })
+  await router.push(`/staff/orders/${orderId}`)
 }
 </script>
 
@@ -183,27 +195,19 @@ async function openNotification(orderId: string, notificationId: string) {
         </p>
       </div>
 
-      <nav
-        v-if="navigationItems.length > 0"
-        class="navigation"
-        aria-label="Основная навигация"
-      >
-        <RouterLink
-          v-for="item in navigationItems"
-          :key="item.to"
-          :to="item.to"
-          class="navigation__link"
-        >
+      <nav v-if="navigationItems.length > 0" class="navigation" aria-label="Основная навигация">
+        <RouterLink v-for="item in navigationItems" :key="item.to" :to="item.to" class="navigation__link">
           {{ item.name }}
         </RouterLink>
       </nav>
 
       <div v-if="sessionStore.currentUser" class="topbar__meta">
         <span class="pill">{{ currentRoleLabel }}</span>
+        <span v-if="sessionStore.currentUser.isApproved === false" class="pill pill--muted">
+          Ожидает апрув
+        </span>
         <span class="pill pill--muted">{{ sessionStore.currentUser.login }}</span>
-        <button class="button button--ghost" type="button" @click="handleLogout">
-          Выйти
-        </button>
+        <button class="button button--ghost" type="button" @click="handleLogout">Выйти</button>
       </div>
     </header>
 

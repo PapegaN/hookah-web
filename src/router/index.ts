@@ -9,11 +9,16 @@ declare module 'vue-router' {
   interface RouteMeta {
     requiresAuth?: boolean
     requiresGuest?: boolean
+    allowPending?: boolean
     roles?: UserRole[]
   }
 }
 
-function getDefaultRoute(role?: UserRole) {
+function getDefaultRoute(role?: UserRole, isApproved = true) {
+  if (!isApproved) {
+    return '/pending-approval'
+  }
+
   switch (role) {
     case 'admin':
       return '/admin/users'
@@ -45,6 +50,15 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/pending-approval',
+    name: 'pending-approval',
+    component: () => import('@/views/PendingApprovalView.vue'),
+    meta: {
+      requiresAuth: true,
+      allowPending: true,
+    },
+  },
+  {
     path: '/admin/users',
     name: 'admin-users',
     component: () => import('@/views/AdminUsersView.vue'),
@@ -66,6 +80,15 @@ const routes: RouteRecordRaw[] = [
     path: '/staff/orders',
     name: 'staff-orders',
     component: () => import('@/views/StaffOrdersView.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['admin', 'hookah_master'],
+    },
+  },
+  {
+    path: '/staff/orders/:id',
+    name: 'staff-order-detail',
+    component: () => import('@/views/StaffOrderDetailView.vue'),
     meta: {
       requiresAuth: true,
       roles: ['admin', 'hookah_master'],
@@ -118,7 +141,10 @@ router.beforeEach((to) => {
   sessionStore.hydrateFromStorage()
 
   if (to.meta.requiresGuest && sessionStore.isAuthenticated) {
-    return getDefaultRoute(sessionStore.currentUser?.role)
+    return getDefaultRoute(
+      sessionStore.currentUser?.role,
+      sessionStore.currentUser?.isApproved !== false,
+    )
   }
 
   if (to.meta.requiresAuth === false) {
@@ -132,8 +158,19 @@ router.beforeEach((to) => {
     }
   }
 
+  if (sessionStore.currentUser?.isApproved === false && !to.meta.allowPending) {
+    return '/pending-approval'
+  }
+
+  if (to.name === 'pending-approval' && sessionStore.currentUser?.isApproved !== false) {
+    return getDefaultRoute(sessionStore.currentUser?.role, true)
+  }
+
   if (to.meta.roles && !to.meta.roles.includes(sessionStore.currentUser!.role)) {
-    return getDefaultRoute(sessionStore.currentUser?.role)
+    return getDefaultRoute(
+      sessionStore.currentUser?.role,
+      sessionStore.currentUser?.isApproved !== false,
+    )
   }
 
   return true
