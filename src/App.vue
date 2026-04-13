@@ -33,6 +33,7 @@ const navigationItems = computed(() => {
         { name: 'Пользователи', to: '/admin/users' },
         { name: 'Справочники', to: '/admin/references' },
         { name: 'Заказы', to: '/staff/orders' },
+        { name: 'Настройки', to: '/admin/settings' },
       ]
     case 'hookah_master':
       return [...sharedItems, { name: 'Заказы', to: '/staff/orders' }]

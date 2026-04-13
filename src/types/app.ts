@@ -24,6 +24,8 @@ export type ReferenceEntityType =
   | 'kalauds'
   | 'charcoals'
 
+export type SettingsResource = ReferenceEntityType | 'users' | 'orders' | 'backup'
+
 export interface AppUser {
   id: string
   login: string
@@ -216,6 +218,18 @@ export interface FulfillOrderPayload {
 export interface SubmitFeedbackPayload {
   ratingScore: number
   ratingReview?: string
+}
+
+export interface SettingsExportResponse<T = unknown> {
+  resource: SettingsResource
+  exportedAt: string
+  data: T
+}
+
+export interface SettingsImportResponse {
+  resource: SettingsResource
+  importedAt: string
+  importedCount: number
 }
 
 export type EditableReferenceItem =

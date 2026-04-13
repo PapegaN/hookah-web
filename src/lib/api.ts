@@ -8,6 +8,9 @@ import type {
   OrderView,
   ReferencesSnapshot,
   ReferenceEntityType,
+  SettingsExportResponse,
+  SettingsImportResponse,
+  SettingsResource,
   SubmitFeedbackPayload,
   UpdateUserPayload,
   UpsertReferencePayload,
@@ -169,6 +172,30 @@ export const api = {
       method: 'PATCH',
       token,
       body: JSON.stringify(payload),
+    })
+  },
+  exportSettings<T>(token: string, resource: SettingsResource) {
+    return request<SettingsExportResponse<T>>(`/settings/export/${resource}`, {
+      token,
+    })
+  },
+  exportBackup(token: string) {
+    return request<SettingsExportResponse>('/settings/backup', {
+      token,
+    })
+  },
+  importSettings(token: string, resource: SettingsResource, data: unknown) {
+    return request<SettingsImportResponse>(`/settings/import/${resource}`, {
+      method: 'POST',
+      token,
+      body: JSON.stringify({ data }),
+    })
+  },
+  importBackup(token: string, data: unknown) {
+    return request<SettingsImportResponse>('/settings/backup/import', {
+      method: 'POST',
+      token,
+      body: JSON.stringify({ data }),
     })
   },
 }
