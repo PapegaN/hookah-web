@@ -5,6 +5,7 @@ import { ApiError, api } from '@/lib/api'
 import type {
   AppUser,
   CreateOrderPayload,
+  OrderNotification,
   OrderView,
   ReferenceEntityType,
   ReferencesSnapshot,
@@ -21,12 +22,20 @@ const emptyReferences = (): ReferencesSnapshot => ({
   charcoals: [],
 })
 
+interface OrderSnapshot {
+  updatedAt: string
+  participantCount: number
+  status: OrderView['status']
+}
+
 export const useAppDataStore = defineStore('app-data', () => {
   const references = ref<ReferencesSnapshot>(emptyReferences())
   const users = ref<AppUser[]>([])
   const orders = ref<OrderView[]>([])
+  const staffNotifications = ref<OrderNotification[]>([])
   const isBootstrapping = ref(false)
   const errorMessage = ref<string | null>(null)
+  const orderSnapshots = ref<Record<string, OrderSnapshot>>({})
 
   const latestClientOrder = computed(() => orders.value[0] ?? null)
 
@@ -42,22 +51,43 @@ export const useAppDataStore = defineStore('app-data', () => {
       ])
 
       references.value = referencesResponse
-      orders.value = ordersResponse
+      applyOrders(ordersResponse, {
+        currentUser,
+        notify: false,
+      })
       users.value = usersResponse
     } catch (error) {
       errorMessage.value =
-        error instanceof ApiError ? 'Не удалось загрузить данные панели.' : 'Ошибка загрузки'
+        error instanceof ApiError
+          ? 'Не удалось загрузить данные панели.'
+          : 'Ошибка загрузки'
       throw error
     } finally {
       isBootstrapping.value = false
     }
   }
 
+  async function refreshOrders(
+    token: string,
+    currentUser: AppUser,
+    options: {
+      notify?: boolean
+    } = {},
+  ) {
+    const nextOrders = await api.getOrders(token)
+    applyOrders(nextOrders, {
+      currentUser,
+      notify: options.notify ?? false,
+    })
+  }
+
   function reset() {
     references.value = emptyReferences()
     users.value = []
     orders.value = []
+    staffNotifications.value = []
     errorMessage.value = null
+    orderSnapshots.value = {}
   }
 
   async function updateUser(token: string, userId: string, payload: UpdateUserPayload) {
@@ -86,7 +116,7 @@ export const useAppDataStore = defineStore('app-data', () => {
 
   async function createOrder(token: string, payload: CreateOrderPayload) {
     const createdOrder = await api.createOrder(token, payload)
-    orders.value = [createdOrder, ...orders.value]
+    replaceOrder(createdOrder)
   }
 
   async function startOrder(token: string, orderId: string) {
@@ -115,20 +145,57 @@ export const useAppDataStore = defineStore('app-data', () => {
     replaceOrder(updatedOrder)
   }
 
+  function dismissNotification(notificationId: string) {
+    staffNotifications.value = staffNotifications.value.filter(
+      (notification) => notification.id !== notificationId,
+    )
+  }
+
+  function clearNotifications() {
+    staffNotifications.value = []
+  }
+
+  function applyOrders(
+    nextOrders: OrderView[],
+    options: {
+      currentUser: AppUser
+      notify: boolean
+    },
+  ) {
+    const nextSnapshots = buildOrderSnapshots(nextOrders)
+
+    if (options.notify && options.currentUser.role !== 'client') {
+      const notifications = buildNotifications(orderSnapshots.value, nextOrders)
+
+      if (notifications.length > 0) {
+        staffNotifications.value = [...notifications, ...staffNotifications.value].slice(0, 5)
+      }
+    }
+
+    orders.value = sortOrders(nextOrders)
+    orderSnapshots.value = nextSnapshots
+  }
+
   function replaceOrder(updatedOrder: OrderView) {
-    orders.value = orders.value
-      .map((order) => (order.id === updatedOrder.id ? updatedOrder : order))
-      .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+    const nextOrders = sortOrders([
+      updatedOrder,
+      ...orders.value.filter((order) => order.id !== updatedOrder.id),
+    ])
+
+    orders.value = nextOrders
+    orderSnapshots.value = buildOrderSnapshots(nextOrders)
   }
 
   return {
     references,
     users,
     orders,
+    staffNotifications,
     latestClientOrder,
     isBootstrapping,
     errorMessage,
     bootstrap,
+    refreshOrders,
     reset,
     updateUser,
     createReference,
@@ -137,5 +204,66 @@ export const useAppDataStore = defineStore('app-data', () => {
     startOrder,
     fulfillOrder,
     submitFeedback,
+    dismissNotification,
+    clearNotifications,
   }
 })
+
+function sortOrders(items: OrderView[]) {
+  return items.slice().sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+}
+
+function buildOrderSnapshots(items: OrderView[]) {
+  return Object.fromEntries(
+    items.map((order) => [
+      order.id,
+      {
+        updatedAt: order.updatedAt,
+        participantCount: order.participants.length,
+        status: order.status,
+      } satisfies OrderSnapshot,
+    ]),
+  )
+}
+
+function buildNotifications(
+  previousSnapshots: Record<string, OrderSnapshot>,
+  nextOrders: OrderView[],
+): OrderNotification[] {
+  return nextOrders.flatMap((order) => {
+    const previous = previousSnapshots[order.id]
+    const createdAt = new Date().toISOString()
+
+    if (!previous && order.status === 'new') {
+      return [
+        {
+          id: `${order.id}:${createdAt}:created`,
+          orderId: order.id,
+          tableLabel: order.tableLabel,
+          title: 'Новый заказ',
+          message: `${order.tableLabel}: новый заказ ожидает мастера.`,
+          createdAt,
+        },
+      ]
+    }
+
+    if (
+      previous &&
+      order.participants.length > previous.participantCount &&
+      (order.status === 'new' || order.status === 'in_progress')
+    ) {
+      return [
+        {
+          id: `${order.id}:${createdAt}:participant`,
+          orderId: order.id,
+          tableLabel: order.tableLabel,
+          title: 'Новый гость у стола',
+          message: `${order.tableLabel}: к заказу присоединился ещё один клиент.`,
+          createdAt,
+        },
+      ]
+    }
+
+    return []
+  })
+}

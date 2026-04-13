@@ -4,6 +4,7 @@ import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 
 import { useAppDataStore } from '@/stores/app-data'
 import { useSessionStore } from '@/stores/session'
+import { formatDateTime } from '@/utils/date'
 
 const route = useRoute()
 const router = useRouter()
@@ -92,22 +93,93 @@ watch(
   { immediate: true },
 )
 
+watch(
+  () =>
+    [
+      sessionStore.accessToken,
+      sessionStore.currentUser?.id,
+      sessionStore.currentUser?.role,
+      bootstrappedForUserId.value,
+    ] as const,
+  ([accessToken, userId, role, bootstrappedUserId], _previous, onCleanup) => {
+    if (!accessToken || !userId || !role || bootstrappedUserId !== userId) {
+      return
+    }
+
+    const refresh = async () => {
+      if (!sessionStore.currentUser) {
+        return
+      }
+
+      try {
+        await appDataStore.refreshOrders(accessToken, sessionStore.currentUser, {
+          notify: role !== 'client',
+        })
+      } catch {
+        return
+      }
+    }
+
+    const intervalId = window.setInterval(() => {
+      void refresh()
+    }, 12000)
+
+    onCleanup(() => {
+      window.clearInterval(intervalId)
+    })
+  },
+  { immediate: true },
+)
+
 async function handleLogout() {
   sessionStore.logout()
   appDataStore.reset()
   bootstrappedForUserId.value = null
   await router.push('/auth')
 }
+
+async function openNotification(orderId: string, notificationId: string) {
+  appDataStore.dismissNotification(notificationId)
+  await router.push({
+    path: '/staff/orders',
+    query: {
+      orderId,
+    },
+  })
+}
 </script>
 
 <template>
   <div class="app-shell" :class="{ 'app-shell--auth': isAuthRoute }">
+    <aside
+      v-if="appDataStore.staffNotifications.length > 0 && !isAuthRoute"
+      class="notification-stack"
+      aria-label="Новые заказы"
+    >
+      <button
+        v-for="notification in appDataStore.staffNotifications"
+        :key="notification.id"
+        class="notification-card"
+        type="button"
+        @click="openNotification(notification.orderId, notification.id)"
+      >
+        <div class="notification-card__header">
+          <div>
+            <p class="section-label">{{ notification.title }}</p>
+            <h3>{{ notification.tableLabel }}</h3>
+          </div>
+          <span class="pill pill--muted">{{ formatDateTime(notification.createdAt) }}</span>
+        </div>
+        <p>{{ notification.message }}</p>
+      </button>
+    </aside>
+
     <header class="topbar">
       <div class="topbar__content">
         <p class="eyebrow">Hookah Lounge Control</p>
         <h1>Адаптивная панель кальянной</h1>
         <p class="section-copy">
-          Управление пользователями, справочниками и заказами в одном интерфейсе.
+          Управление пользователями, справочниками, столами и заказами в одном интерфейсе.
         </p>
       </div>
 

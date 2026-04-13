@@ -10,7 +10,10 @@ const router = useRouter()
 const sessionStore = useSessionStore()
 const appDataStore = useAppDataStore()
 
+const tableOptions = Array.from({ length: 8 }, (_, index) => `Стол ${index + 1}`)
+
 const form = reactive({
+  tableLabel: tableOptions[0] ?? 'Стол 1',
   description: '',
   selectedIds: [] as string[],
 })
@@ -19,6 +22,11 @@ const submitError = ref<string | null>(null)
 
 async function submitOrder() {
   if (!sessionStore.accessToken) {
+    return
+  }
+
+  if (!form.tableLabel.trim()) {
+    submitError.value = 'Выберите стол, за которым находится клиент.'
     return
   }
 
@@ -35,6 +43,7 @@ async function submitOrder() {
   submitError.value = null
 
   await appDataStore.createOrder(sessionStore.accessToken, {
+    tableLabel: form.tableLabel,
     description: form.description,
     requestedTobaccoIds: form.selectedIds,
   })
@@ -53,8 +62,20 @@ async function submitOrder() {
         <h2>Соберите заказ на кальян</h2>
       </div>
       <p class="section-copy">
-        Выберите до трех вкусов, опишите пожелания и отправьте заказ администратору и мастеру.
+        Выберите стол, добавьте до трёх вкусов и опишите пожелания. Если заказ на
+        этом столе уже существует, вы присоединитесь к общей забивке.
       </p>
+    </div>
+
+    <div class="editor-grid">
+      <label class="field">
+        <span>Стол</span>
+        <select v-model="form.tableLabel" class="input">
+          <option v-for="table in tableOptions" :key="table" :value="table">
+            {{ table }}
+          </option>
+        </select>
+      </label>
     </div>
 
     <label class="field">

@@ -4,6 +4,7 @@ import { RouterLink } from 'vue-router'
 
 import { useAppDataStore } from '@/stores/app-data'
 import { useSessionStore } from '@/stores/session'
+import { formatDateTime } from '@/utils/date'
 
 const sessionStore = useSessionStore()
 const appDataStore = useAppDataStore()
@@ -15,7 +16,45 @@ const ratingForm = reactive({
 
 const feedbackError = ref<string | null>(null)
 
-const latestOrder = computed(() => appDataStore.latestClientOrder)
+const latestOrder = computed(
+  () =>
+    appDataStore.orders.find(
+      (order) =>
+        order.status !== 'rated' ||
+        order.participants.some(
+          (participant) =>
+            participant.client.id === sessionStore.currentUser?.id && !participant.feedback,
+        ),
+    ) ?? appDataStore.latestClientOrder,
+)
+
+const currentParticipant = computed(() =>
+  latestOrder.value?.participants.find(
+    (participant) => participant.client.id === sessionStore.currentUser?.id,
+  ),
+)
+
+const canLeaveFeedback = computed(
+  () =>
+    latestOrder.value?.status === 'ready_for_feedback' &&
+    currentParticipant.value &&
+    !currentParticipant.value.feedback,
+)
+
+const waitingText = computed(() => {
+  switch (latestOrder.value?.status) {
+    case 'new':
+      return 'Заказ создан и ждёт, пока мастер возьмёт его в работу.'
+    case 'in_progress':
+      return 'Мастер уже работает над общей забивкой стола.'
+    case 'ready_for_feedback':
+      return 'Кальян отдан. Каждый клиент за столом может оставить свой отзыв.'
+    case 'rated':
+      return 'Все отзывы по столу уже собраны.'
+    default:
+      return ''
+  }
+})
 
 async function submitFeedback() {
   if (!sessionStore.accessToken || !latestOrder.value) {
@@ -30,61 +69,104 @@ async function submitFeedback() {
   })
 }
 
-const waitingText = computed(() => {
-  switch (latestOrder.value?.status) {
-    case 'new':
-      return 'Заказ создан и ждет, пока мастер возьмет его в работу.'
-    case 'in_progress':
-      return 'Мастер уже работает над вашей забивкой.'
-    case 'ready_for_feedback':
-      return 'Кальян отдан. Оцените результат и оставьте отзыв.'
-    case 'rated':
-      return 'Спасибо, отзыв сохранен.'
-    default:
-      return ''
-  }
-})
+const timelineLabels = {
+  created: 'Заказ создан',
+  participant_joined: 'К заказу присоединился клиент',
+  started: 'Заказ взят в работу',
+  delivered: 'Заказ отдан',
+  feedback_received: 'Получен отзыв',
+}
 </script>
 
 <template>
-  <section v-if="latestOrder" class="panel">
-    <div class="panel__header">
-      <div>
-        <p class="section-label">Client status</p>
-        <h2>Текущий заказ</h2>
-      </div>
-      <p class="section-copy">{{ waitingText }}</p>
-    </div>
-
-    <div class="task-list">
-      <article class="task-card">
-        <p class="task-card__status">Что просили</p>
-        <h3>Запрос клиента</h3>
-        <p>{{ latestOrder.description }}</p>
-        <div class="pill-row">
-          <span v-for="tobacco in latestOrder.requestedTobaccos" :key="tobacco.id" class="pill">
-            {{ tobacco.brand }} / {{ tobacco.flavorName }}
-          </span>
+  <section v-if="latestOrder" class="stack">
+    <section class="panel">
+      <div class="panel__header">
+        <div>
+          <p class="section-label">Client status</p>
+          <h2>{{ latestOrder.tableLabel }}</h2>
         </div>
-      </article>
+        <span class="pill">{{ latestOrder.status }}</span>
+      </div>
 
-      <article class="task-card">
-        <p class="task-card__status">Статус</p>
-        <h3>{{ latestOrder.status }}</h3>
-        <p>
-          <template v-if="latestOrder.acceptedBy">
-            Заказ в работе у {{ latestOrder.acceptedBy.login }}.
-          </template>
-          <template v-else>Заказ еще не принят в работу.</template>
-        </p>
-      </article>
-    </div>
+      <p class="section-copy">{{ waitingText }}</p>
 
-    <section v-if="latestOrder.status === 'ready_for_feedback'" class="editor-card">
-      <h3>Оцените кальян</h3>
-      <p class="section-copy">
-        Здесь клиент видит, что именно просил, и что фактически забил мастер.
-      </p>
+      <div class="stats-grid">
+        <article class="task-card">
+          <p class="task-card__status">Создан</p>
+          <h3>{{ formatDateTime(latestOrder.createdAt) }}</h3>
+          <p>Время оформления заказа столом.</p>
+        </article>
+
+        <article class="task-card">
+          <p class="task-card__status">Отдан</p>
+          <h3>{{ formatDateTime(latestOrder.deliveredAt) }}</h3>
+          <p>Когда мастер завершил и отдал кальян.</p>
+        </article>
+
+        <article class="task-card">
+          <p class="task-card__status">Последний отзыв</p>
+          <h3>{{ formatDateTime(latestOrder.feedbackAt) }}</h3>
+          <p>Последнее обновление блока отзывов по столу.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel__header">
+        <div>
+          <p class="section-label">Table guests</p>
+          <h3>Кто сидит за столом</h3>
+        </div>
+        <span class="pill">{{ latestOrder.participants.length }} клиентов</span>
+      </div>
+
+      <div class="participant-list">
+        <article
+          v-for="participant in latestOrder.participants"
+          :key="participant.client.id"
+          class="participant-card"
+        >
+          <div class="editor-card__header">
+            <div>
+              <p class="section-label">{{ participant.client.login }}</p>
+              <h4>{{ formatDateTime(participant.joinedAt) }}</h4>
+            </div>
+            <span class="pill pill--muted">
+              {{ participant.client.id === sessionStore.currentUser?.id ? 'Вы' : 'Гость' }}
+            </span>
+          </div>
+
+          <p>{{ participant.description }}</p>
+
+          <div class="pill-row">
+            <span
+              v-for="tobacco in participant.requestedTobaccos"
+              :key="`${participant.client.id}-${tobacco.id}`"
+              class="pill"
+            >
+              {{ tobacco.brand }} / {{ tobacco.flavorName }}
+            </span>
+          </div>
+
+          <p v-if="participant.feedback" class="section-copy">
+            Отзыв: {{ participant.feedback.ratingScore }}/5,
+            {{ formatDateTime(participant.feedback.submittedAt) }}
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel__header">
+        <div>
+          <p class="section-label">Actual packing</p>
+          <h3>Что забил мастер</h3>
+        </div>
+        <span v-if="latestOrder.acceptedBy" class="pill">
+          {{ latestOrder.acceptedBy.login }}
+        </span>
+      </div>
 
       <div class="pill-row">
         <span v-for="tobacco in latestOrder.actualTobaccos" :key="tobacco.id" class="pill">
@@ -95,6 +177,34 @@ const waitingText = computed(() => {
       <p v-if="latestOrder.packingComment" class="section-copy">
         Комментарий мастера: {{ latestOrder.packingComment }}
       </p>
+    </section>
+
+    <section class="panel">
+      <div class="panel__header">
+        <div>
+          <p class="section-label">Status timeline</p>
+          <h3>История статусов</h3>
+        </div>
+      </div>
+
+      <div class="timeline-list">
+        <article v-for="event in latestOrder.timeline" :key="event.id" class="timeline-item">
+          <div class="timeline-item__header">
+            <strong>{{ timelineLabels[event.type] }}</strong>
+            <span>{{ formatDateTime(event.occurredAt) }}</span>
+          </div>
+          <p>{{ event.note }}</p>
+        </article>
+      </div>
+    </section>
+
+    <section v-if="canLeaveFeedback" class="panel">
+      <div class="panel__header">
+        <div>
+          <p class="section-label">Feedback</p>
+          <h3>Оцените кальян</h3>
+        </div>
+      </div>
 
       <label class="field">
         <span>Оценка по 5-балльной шкале</span>
@@ -110,16 +220,23 @@ const waitingText = computed(() => {
       <p v-if="feedbackError" class="form-error">{{ feedbackError }}</p>
 
       <button class="button button--primary" type="button" @click="submitFeedback">
-        Отправить оценку
+        Отправить отзыв
       </button>
     </section>
 
-    <section v-else-if="latestOrder.status === 'rated'" class="editor-card">
-      <h3>Спасибо за отзыв</h3>
+    <section
+      v-else-if="currentParticipant?.feedback"
+      class="panel"
+    >
+      <p class="section-label">Feedback</p>
+      <h3>Ваш отзыв уже сохранён</h3>
       <p class="section-copy">
-        Ваша оценка: {{ latestOrder.ratingScore }}/5. Отзыв сохранен и доступен команде.
+        Оценка {{ currentParticipant.feedback.ratingScore }}/5 от
+        {{ formatDateTime(currentParticipant.feedback.submittedAt) }}
       </p>
-      <p v-if="latestOrder.ratingReview" class="section-copy">{{ latestOrder.ratingReview }}</p>
+      <p v-if="currentParticipant.feedback.ratingReview" class="section-copy">
+        {{ currentParticipant.feedback.ratingReview }}
+      </p>
     </section>
   </section>
 

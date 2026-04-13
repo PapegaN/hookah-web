@@ -2,6 +2,13 @@ export type UserRole = 'admin' | 'hookah_master' | 'client'
 
 export type OrderStatus = 'new' | 'in_progress' | 'ready_for_feedback' | 'rated'
 
+export type OrderTimelineEventType =
+  | 'created'
+  | 'participant_joined'
+  | 'started'
+  | 'delivered'
+  | 'feedback_received'
+
 export type ReferenceEntityType =
   | 'tobaccos'
   | 'hookahs'
@@ -75,20 +82,54 @@ export interface ReferencesSnapshot {
   charcoals: CharcoalReference[]
 }
 
+export interface OrderFeedback {
+  client: AppUser
+  ratingScore: number
+  ratingReview?: string
+  submittedAt: string
+}
+
+export interface OrderParticipant {
+  client: AppUser
+  description: string
+  joinedAt: string
+  requestedTobaccos: TobaccoReference[]
+  feedback?: OrderFeedback
+}
+
+export interface OrderTimelineEntry {
+  id: string
+  type: OrderTimelineEventType
+  status: OrderStatus
+  occurredAt: string
+  actor?: AppUser
+  note: string
+}
+
 export interface OrderView {
   id: string
+  tableLabel: string
   status: OrderStatus
-  description: string
   createdAt: string
   updatedAt: string
   deliveredAt?: string
-  client: AppUser
+  feedbackAt?: string
   acceptedBy?: AppUser
+  participants: OrderParticipant[]
   requestedTobaccos: TobaccoReference[]
   actualTobaccos: TobaccoReference[]
   packingComment?: string
-  ratingScore?: number
-  ratingReview?: string
+  feedbacks: OrderFeedback[]
+  timeline: OrderTimelineEntry[]
+}
+
+export interface OrderNotification {
+  id: string
+  orderId: string
+  tableLabel: string
+  title: string
+  message: string
+  createdAt: string
 }
 
 export interface AuthResponse {
@@ -138,6 +179,7 @@ export interface UpsertReferencePayload {
 }
 
 export interface CreateOrderPayload {
+  tableLabel: string
   description: string
   requestedTobaccoIds: string[]
 }
@@ -172,4 +214,10 @@ export interface ReferenceFieldConfig {
   max?: number
   step?: number
   options?: ReferenceFieldOption[]
+}
+
+export interface ReferenceTableColumn {
+  key: string
+  label: string
+  getValue: (item: EditableReferenceItem) => string
 }

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { computed, reactive, ref } from 'vue'
 
 import type {
   EditableReferenceItem,
   ReferenceEntityType,
   ReferenceFieldConfig,
+  ReferenceTableColumn,
 } from '@/types/app'
 
 type FieldValue = string | number | boolean | undefined
@@ -16,6 +17,8 @@ const props = defineProps<{
   entityType: ReferenceEntityType
   items: EditableReferenceItem[]
   fields: ReferenceFieldConfig[]
+  columns: ReferenceTableColumn[]
+  addButtonLabel: string
 }>()
 
 const emit = defineEmits<{
@@ -23,8 +26,13 @@ const emit = defineEmits<{
   update: [entityType: ReferenceEntityType, id: string, payload: Record<string, FieldValue>]
 }>()
 
-const createDraft = reactive<FormState>(buildEmptyDraft())
-const editDrafts = reactive<Record<string, FormState>>({})
+const isModalOpen = ref(false)
+const editingItemId = ref<string | null>(null)
+const modalDraft = reactive<FormState>({})
+
+const modalTitle = computed(() =>
+  editingItemId.value ? `Редактировать: ${props.title}` : `Добавить: ${props.title}`,
+)
 
 function buildEmptyDraft(): FormState {
   return Object.fromEntries(
@@ -35,48 +43,55 @@ function buildEmptyDraft(): FormState {
   )
 }
 
-function getEditDraft(item: EditableReferenceItem): FormState {
-  let draft = editDrafts[item.id]
+function openCreateModal() {
+  editingItemId.value = null
+  Object.assign(modalDraft, buildEmptyDraft())
+  isModalOpen.value = true
+}
 
-  if (!draft) {
-    draft = Object.fromEntries(
+function openEditModal(item: EditableReferenceItem) {
+  editingItemId.value = item.id
+  Object.assign(
+    modalDraft,
+    Object.fromEntries(
       props.fields.map((field) => [
         field.key,
         item[field.key as keyof EditableReferenceItem] as FieldValue,
       ]),
-    )
-    editDrafts[item.id] = draft
-  }
-
-  return draft
+    ),
+  )
+  isModalOpen.value = true
 }
 
-function submitCreate() {
-  emit('create', props.entityType, normalizeDraft(createDraft))
-  Object.assign(createDraft, buildEmptyDraft())
+function closeModal() {
+  isModalOpen.value = false
+  editingItemId.value = null
+  Object.assign(modalDraft, buildEmptyDraft())
 }
 
-function submitUpdate(itemId: string) {
-  const draft = editDrafts[itemId]
+async function submitModal() {
+  const payload = normalizeDraft(modalDraft)
 
-  if (!draft) {
-    return
+  if (editingItemId.value) {
+    emit('update', props.entityType, editingItemId.value, payload)
+  } else {
+    emit('create', props.entityType, payload)
   }
 
-  emit('update', props.entityType, itemId, normalizeDraft(draft))
+  closeModal()
 }
 
 function normalizeDraft(draft: FormState) {
   return Object.fromEntries(
-    Object.entries(draft).map(([key, value]) => [
-      key,
-      typeof value === 'string' ? value.trim() : value,
-    ]),
-  )
-}
+    Object.entries(draft).map(([key, value]) => {
+      if (typeof value === 'string') {
+        const normalized = value.trim()
+        return [key, normalized || undefined]
+      }
 
-function getItemTitle(item: EditableReferenceItem) {
-  return 'flavorName' in item ? item.flavorName : item.name
+      return [key, value]
+    }),
+  )
 }
 
 function getTextValue(draft: FormState, key: string) {
@@ -117,85 +132,58 @@ function updateBooleanValue(draft: FormState, key: string, event: Event) {
   <section class="panel">
     <div class="panel__header">
       <div>
-        <p class="section-label">Admin editor</p>
-        <h3>{{ title }}</h3>
+        <p class="section-label">Reference table</p>
+        <h2>{{ title }}</h2>
       </div>
-      <p class="section-copy">{{ description }}</p>
+      <button class="button button--primary" type="button" @click="openCreateModal">
+        {{ addButtonLabel }}
+      </button>
     </div>
 
-    <div class="editor-card">
-      <h4>Добавить новую запись</h4>
-      <div class="editor-grid">
-        <label v-for="field in fields" :key="field.key" class="field">
-          <span>{{ field.label }}</span>
+    <p class="section-copy">{{ description }}</p>
 
-          <template v-if="field.kind === 'textarea'">
-            <textarea
-              :value="getTextValue(createDraft, field.key)"
-              class="input textarea"
-              rows="3"
-              @input="updateTextValue(createDraft, field.key, $event)"
-            />
-          </template>
+    <div class="table-shell">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th v-for="column in columns" :key="column.key" scope="col">
+              {{ column.label }}
+            </th>
+            <th scope="col">Действия</th>
+          </tr>
+        </thead>
 
-          <template v-else-if="field.kind === 'select'">
-            <select
-              :value="getTextValue(createDraft, field.key)"
-              class="input"
-              @change="updateTextValue(createDraft, field.key, $event)"
-            >
-              <option
-                v-for="option in field.options ?? []"
-                :key="option.value"
-                :value="option.value"
-              >
-                {{ option.label }}
-              </option>
-            </select>
-          </template>
+        <tbody>
+          <tr v-for="item in items" :key="item.id">
+            <td v-for="column in columns" :key="column.key">
+              {{ column.getValue(item) }}
+            </td>
+            <td>
+              <button class="button button--ghost" type="button" @click="openEditModal(item)">
+                Изменить
+              </button>
+            </td>
+          </tr>
 
-          <template v-else-if="field.kind === 'boolean'">
-            <input
-              :checked="getBooleanValue(createDraft, field.key)"
-              class="toggle"
-              type="checkbox"
-              @change="updateBooleanValue(createDraft, field.key, $event)"
-            />
-          </template>
-
-          <template v-else>
-            <input
-              :value="
-                field.kind === 'number'
-                  ? getNumberValue(createDraft, field.key)
-                  : getTextValue(createDraft, field.key)
-              "
-              class="input"
-              :type="field.kind === 'number' ? 'number' : 'text'"
-              :min="field.min"
-              :max="field.max"
-              :step="field.step ?? 1"
-              @input="
-                field.kind === 'number'
-                  ? updateNumberValue(createDraft, field.key, $event)
-                  : updateTextValue(createDraft, field.key, $event)
-              "
-            />
-          </template>
-        </label>
-      </div>
-
-      <button class="button" type="button" @click="submitCreate">Создать запись</button>
+          <tr v-if="items.length === 0">
+            <td :colspan="columns.length + 1" class="data-table__empty">
+              Пока нет записей для этого справочника.
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
+  </section>
 
-    <div class="stack">
-      <article v-for="item in items" :key="item.id" class="editor-card">
-        <div class="editor-card__header">
+  <Teleport to="body">
+    <div v-if="isModalOpen" class="modal-overlay" @click.self="closeModal">
+      <section class="modal-card">
+        <div class="panel__header">
           <div>
-            <p class="section-label">{{ entityType }}</p>
-            <h4>{{ getItemTitle(item) }}</h4>
+            <p class="section-label">Modal editor</p>
+            <h3>{{ modalTitle }}</h3>
           </div>
-          <span class="pill">{{ item.isActive ? 'Активно' : 'Скрыто' }}</span>
+          <button class="button button--ghost" type="button" @click="closeModal">Закрыть</button>
         </div>
 
         <div class="editor-grid">
@@ -204,18 +192,18 @@ function updateBooleanValue(draft: FormState, key: string, event: Event) {
 
             <template v-if="field.kind === 'textarea'">
               <textarea
-                :value="getTextValue(getEditDraft(item), field.key)"
+                :value="getTextValue(modalDraft, field.key)"
                 class="input textarea"
-                rows="3"
-                @input="updateTextValue(getEditDraft(item), field.key, $event)"
+                rows="4"
+                @input="updateTextValue(modalDraft, field.key, $event)"
               />
             </template>
 
             <template v-else-if="field.kind === 'select'">
               <select
-                :value="getTextValue(getEditDraft(item), field.key)"
+                :value="getTextValue(modalDraft, field.key)"
                 class="input"
-                @change="updateTextValue(getEditDraft(item), field.key, $event)"
+                @change="updateTextValue(modalDraft, field.key, $event)"
               >
                 <option
                   v-for="option in field.options ?? []"
@@ -229,10 +217,10 @@ function updateBooleanValue(draft: FormState, key: string, event: Event) {
 
             <template v-else-if="field.kind === 'boolean'">
               <input
-                :checked="getBooleanValue(getEditDraft(item), field.key)"
+                :checked="getBooleanValue(modalDraft, field.key)"
                 class="toggle"
                 type="checkbox"
-                @change="updateBooleanValue(getEditDraft(item), field.key, $event)"
+                @change="updateBooleanValue(modalDraft, field.key, $event)"
               />
             </template>
 
@@ -240,8 +228,8 @@ function updateBooleanValue(draft: FormState, key: string, event: Event) {
               <input
                 :value="
                   field.kind === 'number'
-                    ? getNumberValue(getEditDraft(item), field.key)
-                    : getTextValue(getEditDraft(item), field.key)
+                    ? getNumberValue(modalDraft, field.key)
+                    : getTextValue(modalDraft, field.key)
                 "
                 class="input"
                 :type="field.kind === 'number' ? 'number' : 'text'"
@@ -250,18 +238,21 @@ function updateBooleanValue(draft: FormState, key: string, event: Event) {
                 :step="field.step ?? 1"
                 @input="
                   field.kind === 'number'
-                    ? updateNumberValue(getEditDraft(item), field.key, $event)
-                    : updateTextValue(getEditDraft(item), field.key, $event)
+                    ? updateNumberValue(modalDraft, field.key, $event)
+                    : updateTextValue(modalDraft, field.key, $event)
                 "
               />
             </template>
           </label>
         </div>
 
-        <button class="button button--secondary" type="button" @click="submitUpdate(item.id)">
-          Сохранить изменения
-        </button>
-      </article>
+        <div class="modal-actions">
+          <button class="button button--ghost" type="button" @click="closeModal">Отмена</button>
+          <button class="button button--primary" type="button" @click="submitModal">
+            Сохранить
+          </button>
+        </div>
+      </section>
     </div>
-  </section>
+  </Teleport>
 </template>

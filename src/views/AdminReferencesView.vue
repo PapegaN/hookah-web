@@ -1,11 +1,30 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue'
+
 import AdminReferenceSection from '@/components/AdminReferenceSection.vue'
 import { useAppDataStore } from '@/stores/app-data'
 import { useSessionStore } from '@/stores/session'
-import type { ReferenceFieldConfig, ReferenceEntityType } from '@/types/app'
+import type {
+  EditableReferenceItem,
+  ReferenceEntityType,
+  ReferenceFieldConfig,
+  ReferenceTableColumn,
+} from '@/types/app'
+
+interface ReferenceTabConfig {
+  key: ReferenceEntityType
+  label: string
+  title: string
+  description: string
+  addButtonLabel: string
+  fields: ReferenceFieldConfig[]
+  columns: ReferenceTableColumn[]
+}
 
 const appDataStore = useAppDataStore()
 const sessionStore = useSessionStore()
+
+const activeTab = ref<ReferenceEntityType>('tobaccos')
 
 const bowlTypeOptions = [
   { label: 'Phunnel', value: 'phunnel' },
@@ -71,6 +90,176 @@ const charcoalFields: ReferenceFieldConfig[] = [
   { key: 'isActive', label: 'Активен', kind: 'boolean' },
 ]
 
+const referenceTabs: ReferenceTabConfig[] = [
+  {
+    key: 'tobaccos',
+    label: 'Табаки',
+    title: 'Справочник табака',
+    description: 'Бренд, линейка, вкус, яркость и оценочная крепость в табличном виде.',
+    addButtonLabel: 'Добавить табак',
+    fields: tobaccoFields,
+    columns: [
+      { key: 'brand', label: 'Бренд', getValue: (item) => ('brand' in item ? item.brand : '') },
+      { key: 'line', label: 'Линейка', getValue: (item) => ('line' in item ? item.line : '') },
+      { key: 'flavor', label: 'Вкус', getValue: (item) => ('flavorName' in item ? item.flavorName : '') },
+      {
+        key: 'strength',
+        label: 'Крепость',
+        getValue: (item) =>
+          'estimatedStrengthLevel' in item ? `${item.estimatedStrengthLevel}/5` : '',
+      },
+      {
+        key: 'brightness',
+        label: 'Яркость',
+        getValue: (item) => ('brightnessLevel' in item ? `${item.brightnessLevel}/5` : ''),
+      },
+      {
+        key: 'active',
+        label: 'Статус',
+        getValue: (item) => (item.isActive ? 'Активен' : 'Скрыт'),
+      },
+    ],
+  },
+  {
+    key: 'hookahs',
+    label: 'Кальяны',
+    title: 'Справочник кальянов',
+    description: 'Фирма, название, внутренний диаметр и наличие диффузора.',
+    addButtonLabel: 'Добавить кальян',
+    fields: hookahFields,
+    columns: [
+      {
+        key: 'manufacturer',
+        label: 'Фирма',
+        getValue: (item) => ('manufacturer' in item ? item.manufacturer : ''),
+      },
+      { key: 'name', label: 'Название', getValue: (item) => ('name' in item ? item.name : '') },
+      {
+        key: 'diameter',
+        label: 'Диаметр',
+        getValue: (item) => ('innerDiameterMm' in item ? `${item.innerDiameterMm} мм` : ''),
+      },
+      {
+        key: 'diffuser',
+        label: 'Диффузор',
+        getValue: (item) => ('hasDiffuser' in item ? (item.hasDiffuser ? 'Да' : 'Нет') : ''),
+      },
+      {
+        key: 'active',
+        label: 'Статус',
+        getValue: (item) => (item.isActive ? 'Активен' : 'Скрыт'),
+      },
+    ],
+  },
+  {
+    key: 'bowls',
+    label: 'Чашки',
+    title: 'Справочник чашек',
+    description: 'Тип чашки, материал и размерная группа.',
+    addButtonLabel: 'Добавить чашку',
+    fields: bowlFields,
+    columns: [
+      {
+        key: 'manufacturer',
+        label: 'Фирма',
+        getValue: (item) => ('manufacturer' in item ? item.manufacturer : ''),
+      },
+      { key: 'name', label: 'Название', getValue: (item) => ('name' in item ? item.name : '') },
+      {
+        key: 'type',
+        label: 'Тип',
+        getValue: (item) => ('bowlType' in item ? item.bowlType : ''),
+      },
+      {
+        key: 'material',
+        label: 'Материал',
+        getValue: (item) => ('material' in item ? item.material ?? 'Не указан' : ''),
+      },
+      {
+        key: 'capacity',
+        label: 'Граммовка',
+        getValue: (item) => ('capacityBucket' in item ? item.capacityBucket : ''),
+      },
+    ],
+  },
+  {
+    key: 'kalauds',
+    label: 'Калауды',
+    title: 'Справочник калаудов',
+    description: 'Название, фирма, материал и цвет.',
+    addButtonLabel: 'Добавить калауд',
+    fields: kalaudFields,
+    columns: [
+      {
+        key: 'manufacturer',
+        label: 'Фирма',
+        getValue: (item) => ('manufacturer' in item ? item.manufacturer : ''),
+      },
+      { key: 'name', label: 'Название', getValue: (item) => ('name' in item ? item.name : '') },
+      {
+        key: 'material',
+        label: 'Материал',
+        getValue: (item) => ('material' in item ? item.material ?? 'Не указан' : ''),
+      },
+      {
+        key: 'color',
+        label: 'Цвет',
+        getValue: (item) => ('color' in item ? item.color ?? 'Не указан' : ''),
+      },
+      {
+        key: 'active',
+        label: 'Статус',
+        getValue: (item) => (item.isActive ? 'Активен' : 'Скрыт'),
+      },
+    ],
+  },
+  {
+    key: 'charcoals',
+    label: 'Уголь',
+    title: 'Справочник угля',
+    description: 'Название, фирма и размер угля в одном списке.',
+    addButtonLabel: 'Добавить уголь',
+    fields: charcoalFields,
+    columns: [
+      {
+        key: 'manufacturer',
+        label: 'Фирма',
+        getValue: (item) => ('manufacturer' in item ? item.manufacturer : ''),
+      },
+      { key: 'name', label: 'Название', getValue: (item) => ('name' in item ? item.name : '') },
+      {
+        key: 'size',
+        label: 'Размер',
+        getValue: (item) => ('sizeLabel' in item ? item.sizeLabel : ''),
+      },
+      {
+        key: 'active',
+        label: 'Статус',
+        getValue: (item) => (item.isActive ? 'Активен' : 'Скрыт'),
+      },
+    ],
+  },
+]
+
+const currentTab = computed(() => referenceTabs.find((tab) => tab.key === activeTab.value) ?? referenceTabs[0]!)
+
+const currentItems = computed<EditableReferenceItem[]>(() => {
+  switch (activeTab.value) {
+    case 'tobaccos':
+      return appDataStore.references.tobaccos
+    case 'hookahs':
+      return appDataStore.references.hookahs
+    case 'bowls':
+      return appDataStore.references.bowls
+    case 'kalauds':
+      return appDataStore.references.kalauds
+    case 'charcoals':
+      return appDataStore.references.charcoals
+    default:
+      return []
+  }
+})
+
 async function createItem(
   entityType: ReferenceEntityType,
   payload: Record<string, string | number | boolean | undefined>,
@@ -96,55 +285,38 @@ async function updateItem(
 </script>
 
 <template>
-  <div class="stack">
-    <AdminReferenceSection
-      title="Табаки"
-      description="Бренд, линейка, вкус, описание, оценочная крепость и яркость."
-      entity-type="tobaccos"
-      :items="appDataStore.references.tobaccos"
-      :fields="tobaccoFields"
-      @create="createItem"
-      @update="updateItem"
-    />
+  <section class="panel">
+    <div class="panel__header">
+      <div>
+        <p class="section-label">Admin references</p>
+        <h2>Табличные справочники оборудования и табака</h2>
+      </div>
+      <span class="pill">{{ currentItems.length }} записей</span>
+    </div>
 
-    <AdminReferenceSection
-      title="Кальяны"
-      description="Фирма, название, внутренний диаметр и наличие диффузора."
-      entity-type="hookahs"
-      :items="appDataStore.references.hookahs"
-      :fields="hookahFields"
-      @create="createItem"
-      @update="updateItem"
-    />
+    <div class="tab-row">
+      <button
+        v-for="tab in referenceTabs"
+        :key="tab.key"
+        class="tab-row__button"
+        :class="{ 'tab-row__button--active': activeTab === tab.key }"
+        type="button"
+        @click="activeTab = tab.key"
+      >
+        {{ tab.label }}
+      </button>
+    </div>
+  </section>
 
-    <AdminReferenceSection
-      title="Чашки"
-      description="Тип чашки, материал и размерная группа."
-      entity-type="bowls"
-      :items="appDataStore.references.bowls"
-      :fields="bowlFields"
-      @create="createItem"
-      @update="updateItem"
-    />
-
-    <AdminReferenceSection
-      title="Калауды"
-      description="Редактирование названия, фирмы, материала и цвета."
-      entity-type="kalauds"
-      :items="appDataStore.references.kalauds"
-      :fields="kalaudFields"
-      @create="createItem"
-      @update="updateItem"
-    />
-
-    <AdminReferenceSection
-      title="Уголь"
-      description="Название, фирма и размер кубика."
-      entity-type="charcoals"
-      :items="appDataStore.references.charcoals"
-      :fields="charcoalFields"
-      @create="createItem"
-      @update="updateItem"
-    />
-  </div>
+  <AdminReferenceSection
+    :title="currentTab.title"
+    :description="currentTab.description"
+    :entity-type="currentTab.key"
+    :items="currentItems"
+    :fields="currentTab.fields"
+    :columns="currentTab.columns"
+    :add-button-label="currentTab.addButtonLabel"
+    @create="createItem"
+    @update="updateItem"
+  />
 </template>

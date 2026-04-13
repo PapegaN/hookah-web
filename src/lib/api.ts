@@ -1,4 +1,5 @@
 import type {
+  AppUser,
   AuthResponse,
   CreateOrderPayload,
   DemoAccountsResponse,
@@ -9,7 +10,6 @@ import type {
   SubmitFeedbackPayload,
   UpdateUserPayload,
   UpsertReferencePayload,
-  AppUser,
 } from '@/types/app'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v1'

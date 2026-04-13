@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue'
+import { useRoute } from 'vue-router'
 
 import TobaccoPicker from '@/components/TobaccoPicker.vue'
 import { useAppDataStore } from '@/stores/app-data'
 import { useSessionStore } from '@/stores/session'
+import { formatDateTime } from '@/utils/date'
 
+const route = useRoute()
 const appDataStore = useAppDataStore()
 const sessionStore = useSessionStore()
 
@@ -19,6 +22,17 @@ const orderDrafts = reactive<
 >({})
 
 const visibleOrders = computed(() => appDataStore.orders)
+const highlightedOrderId = computed(() =>
+  typeof route.query.orderId === 'string' ? route.query.orderId : '',
+)
+
+const timelineLabels = {
+  created: 'Заказ создан',
+  participant_joined: 'К столу присоединился клиент',
+  started: 'Заказ взят в работу',
+  delivered: 'Заказ отдан',
+  feedback_received: 'Получен отзыв',
+}
 
 function getDraft(orderId: string) {
   if (!orderDrafts[orderId]) {
@@ -60,49 +74,131 @@ async function fulfillOrder(orderId: string) {
         <p class="section-label">Staff board</p>
         <h2>Заказы для администратора и мастера</h2>
       </div>
-      <p class="section-copy">
-        Здесь видно, что запросил клиент, кто взял заказ в работу и какую фактическую забивку
-        отдал мастер.
-      </p>
+      <span class="pill">{{ visibleOrders.length }} активных карточек</span>
     </div>
+    <p class="section-copy">
+      Уведомление слева переводит прямо к нужному заказу. Внутри карточки видно
+      стол, гостей, запросы по вкусам, историю статусов и все отзывы.
+    </p>
+  </section>
 
-    <div class="stack">
-      <article v-for="order in visibleOrders" :key="order.id" class="editor-card">
-        <div class="editor-card__header">
+  <div class="stack">
+    <article
+      v-for="order in visibleOrders"
+      :key="order.id"
+      class="editor-card"
+      :class="{ 'editor-card--highlighted': highlightedOrderId === order.id }"
+    >
+      <div class="editor-card__header">
+        <div>
+          <p class="section-label">{{ order.tableLabel }}</p>
+          <h3>{{ order.participants.length }} гостей за столом</h3>
+        </div>
+        <span class="pill">{{ order.status }}</span>
+      </div>
+
+      <div class="stats-grid">
+        <article class="task-card">
+          <p class="task-card__status">Создан</p>
+          <h4>{{ formatDateTime(order.createdAt) }}</h4>
+          <p>Время и дата оформления заказа.</p>
+        </article>
+
+        <article class="task-card">
+          <p class="task-card__status">Отдан</p>
+          <h4>{{ formatDateTime(order.deliveredAt) }}</h4>
+          <p>Когда заказ ушёл со стойки клиентам.</p>
+        </article>
+
+        <article class="task-card">
+          <p class="task-card__status">Последний отзыв</p>
+          <h4>{{ formatDateTime(order.feedbackAt) }}</h4>
+          <p>Последнее обновление блока отзывов.</p>
+        </article>
+      </div>
+
+      <section class="stack">
+        <div class="panel__header">
           <div>
-            <p class="section-label">Order {{ order.id.slice(0, 8) }}</p>
-            <h3>{{ order.client.login }}</h3>
+            <p class="section-label">Guests</p>
+            <h4>Люди за столом и их запросы</h4>
           </div>
-          <span class="pill">{{ order.status }}</span>
+          <span v-if="order.acceptedBy" class="pill pill--muted">
+            В работе у {{ order.acceptedBy.login }}
+          </span>
         </div>
 
-        <div class="task-list">
-          <article class="task-card">
-            <p class="task-card__status">Клиент просил</p>
-            <h4>Описание заказа</h4>
-            <p>{{ order.description }}</p>
+        <div class="participant-list">
+          <article v-for="participant in order.participants" :key="participant.client.id" class="participant-card">
+            <div class="editor-card__header">
+              <div>
+                <p class="section-label">{{ participant.client.login }}</p>
+                <h4>{{ formatDateTime(participant.joinedAt) }}</h4>
+              </div>
+              <span class="pill pill--muted">
+                {{ participant.feedback ? 'Отзыв есть' : 'Ждёт отзыв' }}
+              </span>
+            </div>
+
+            <p>{{ participant.description }}</p>
+
             <div class="pill-row">
               <span
-                v-for="tobacco in order.requestedTobaccos"
-                :key="tobacco.id"
+                v-for="tobacco in participant.requestedTobaccos"
+                :key="`${participant.client.id}-${tobacco.id}`"
                 class="pill"
               >
                 {{ tobacco.brand }} / {{ tobacco.flavorName }}
               </span>
             </div>
-          </article>
 
-          <article class="task-card">
-            <p class="task-card__status">Текущий исполнитель</p>
-            <h4>{{ order.acceptedBy?.login ?? 'Еще не назначен' }}</h4>
-            <p>
-              <template v-if="order.status === 'ready_for_feedback' || order.status === 'rated'">
-                Заказ уже отдан клиенту.
+            <p v-if="participant.feedback" class="section-copy">
+              {{ participant.feedback.client.login }}: {{ participant.feedback.ratingScore }}/5,
+              {{ formatDateTime(participant.feedback.submittedAt) }}
+              <template v-if="participant.feedback.ratingReview">
+                — {{ participant.feedback.ratingReview }}
               </template>
-              <template v-else>Можно взять заказ в работу или заполнить забивку.</template>
             </p>
           </article>
         </div>
+      </section>
+
+      <section class="stack">
+        <div class="panel__header">
+          <div>
+            <p class="section-label">Timeline</p>
+            <h4>История статусов</h4>
+          </div>
+        </div>
+
+        <div class="timeline-list">
+          <article v-for="event in order.timeline" :key="event.id" class="timeline-item">
+            <div class="timeline-item__header">
+              <strong>{{ timelineLabels[event.type] }}</strong>
+              <span>{{ formatDateTime(event.occurredAt) }}</span>
+            </div>
+            <p>{{ event.note }}</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="stack">
+        <div class="panel__header">
+          <div>
+            <p class="section-label">Packing</p>
+            <h4>Фактическая забивка</h4>
+          </div>
+        </div>
+
+        <div v-if="order.actualTobaccos.length > 0" class="pill-row">
+          <span v-for="tobacco in order.actualTobaccos" :key="tobacco.id" class="pill">
+            {{ tobacco.brand }} / {{ tobacco.flavorName }}
+          </span>
+        </div>
+
+        <p v-if="order.packingComment" class="section-copy">
+          Комментарий мастера: {{ order.packingComment }}
+        </p>
 
         <button
           v-if="order.status === 'new'"
@@ -117,7 +213,7 @@ async function fulfillOrder(orderId: string) {
           <TobaccoPicker
             v-model:selected-ids="getDraft(order.id).selectedIds"
             title="Фактическая забивка"
-            description="Мастер выбирает, какие вкусы реально пошли в чашу."
+            description="Выберите до трёх вкусов, которые реально пошли в чашу."
             :tobaccos="appDataStore.references.tobaccos"
           />
 
@@ -127,7 +223,7 @@ async function fulfillOrder(orderId: string) {
               v-model="getDraft(order.id).packingComment"
               class="input textarea"
               rows="4"
-              placeholder="Например: сделал микс мягче, добавил холодок и снизил крепость."
+              placeholder="Например: сделал микс мягче, добавил больше холода и снизил крепость."
             />
           </label>
 
@@ -135,17 +231,7 @@ async function fulfillOrder(orderId: string) {
             Отдать заказ
           </button>
         </div>
-
-        <div v-if="order.actualTobaccos.length > 0" class="pill-row">
-          <span v-for="tobacco in order.actualTobaccos" :key="tobacco.id" class="pill">
-            Забито: {{ tobacco.brand }} / {{ tobacco.flavorName }}
-          </span>
-        </div>
-
-        <p v-if="order.packingComment" class="section-copy">
-          Комментарий мастера: {{ order.packingComment }}
-        </p>
-      </article>
-    </div>
-  </section>
+      </section>
+    </article>
+  </div>
 </template>
