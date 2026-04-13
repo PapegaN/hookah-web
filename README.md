@@ -35,6 +35,23 @@ npm run check
 npm run test:e2e
 ```
 
+## Docker
+
+Собрать и запустить только frontend:
+
+```bash
+docker build -t hookah-web .
+docker run --rm -p 8080:80 hookah-web
+```
+
+Если нужен явный адрес backend при сборке:
+
+```bash
+docker build --build-arg VITE_API_BASE_URL=http://localhost:3000/api/v1 -t hookah-web .
+```
+
+Для совместного запуска с API и PostgreSQL используйте корневой `compose.yaml` в главном репозитории.
+
 Для первого запуска e2e-тестов потребуется установить браузеры:
 
 ```bash

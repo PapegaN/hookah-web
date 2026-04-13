@@ -1,0 +1,11 @@
+node_modules/
+dist/
+playwright-report/
+test-results/
+coverage/
+.git/
+.gitignore
+.env
+.env.local
+.eslintcache
+npm-debug.log*
