@@ -11,6 +11,8 @@ export type OrderTimelineEventType =
   | 'feedback_received'
 
 export type TableApprovalStatus = 'pending' | 'approved'
+export type HeatingSystemType = 'coal' | 'electric'
+export type PackingStyle = 'layers' | 'sectors' | 'kompot' | 'custom'
 
 export interface UserPreview {
   id: string
@@ -23,6 +25,7 @@ export type ReferenceEntityType =
   | 'bowls'
   | 'kalauds'
   | 'charcoals'
+  | 'electric_heads'
 
 export type SettingsResource = ReferenceEntityType | 'users' | 'orders' | 'backup'
 
@@ -87,12 +90,44 @@ export interface CharcoalReference {
   isActive: boolean
 }
 
+export interface ElectricHeadReference {
+  id: string
+  manufacturer: string
+  name: string
+  isActive: boolean
+}
+
 export interface ReferencesSnapshot {
   tobaccos: TobaccoReference[]
   hookahs: HookahReference[]
   bowls: BowlReference[]
   kalauds: KalaudReference[]
   charcoals: CharcoalReference[]
+  electricHeads: ElectricHeadReference[]
+}
+
+export interface BlendComponentInput {
+  tobaccoId: string
+  percentage: number
+}
+
+export interface OrderBlendComponent {
+  tobacco: TobaccoReference
+  percentage: number
+}
+
+export interface OrderSetup {
+  heatingSystemType: HeatingSystemType
+  packingStyle?: PackingStyle
+  customPackingStyle?: string
+  hookah?: HookahReference
+  bowl?: BowlReference
+  kalaud?: KalaudReference
+  charcoal?: CharcoalReference
+  electricHead?: ElectricHeadReference
+  charcoalCount?: number
+  warmupMode?: 'with_cap' | 'without_cap'
+  warmupDurationMinutes?: number
 }
 
 export interface OrderFeedback {
@@ -106,6 +141,7 @@ export interface OrderParticipant {
   client: AppUser
   description: string
   joinedAt: string
+  requestedBlend: OrderBlendComponent[]
   requestedTobaccos: TobaccoReference[]
   tableApprovalStatus: TableApprovalStatus
   tableApprovedAt?: string
@@ -131,8 +167,12 @@ export interface OrderView {
   deliveredAt?: string
   feedbackAt?: string
   acceptedBy?: AppUser
+  requestedSetup?: OrderSetup
+  actualSetup?: OrderSetup
   participants: OrderParticipant[]
+  requestedBlend: OrderBlendComponent[]
   requestedTobaccos: TobaccoReference[]
+  actualBlend: OrderBlendComponent[]
   actualTobaccos: TobaccoReference[]
   packingComment?: string
   feedbacks: OrderFeedback[]
@@ -207,11 +247,37 @@ export interface UpsertReferencePayload {
 export interface CreateOrderPayload {
   tableLabel: string
   description: string
-  requestedTobaccoIds: string[]
+  requestedBlend: BlendComponentInput[]
+  requestedSetup: {
+    heatingSystemType: HeatingSystemType
+    packingStyle?: PackingStyle
+    customPackingStyle?: string
+    hookahId?: string
+    bowlId?: string
+    kalaudId?: string
+    charcoalId?: string
+    electricHeadId?: string
+    charcoalCount?: number
+    warmupMode?: 'with_cap' | 'without_cap'
+    warmupDurationMinutes?: number
+  }
 }
 
 export interface FulfillOrderPayload {
-  actualTobaccoIds: string[]
+  actualBlend: BlendComponentInput[]
+  actualSetup: {
+    heatingSystemType: HeatingSystemType
+    packingStyle?: PackingStyle
+    customPackingStyle?: string
+    hookahId?: string
+    bowlId?: string
+    kalaudId?: string
+    charcoalId?: string
+    electricHeadId?: string
+    charcoalCount?: number
+    warmupMode?: 'with_cap' | 'without_cap'
+    warmupDurationMinutes?: number
+  }
   packingComment?: string
 }
 
@@ -238,6 +304,7 @@ export type EditableReferenceItem =
   | BowlReference
   | KalaudReference
   | CharcoalReference
+  | ElectricHeadReference
 
 export interface ReferenceFieldOption {
   label: string

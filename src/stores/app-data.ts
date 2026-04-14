@@ -6,6 +6,7 @@ import type {
   AppUser,
   CreateUserPayload,
   CreateOrderPayload,
+  FulfillOrderPayload,
   OrderNotification,
   OrderView,
   ReferenceEntityType,
@@ -21,6 +22,7 @@ const emptyReferences = (): ReferencesSnapshot => ({
   bowls: [],
   kalauds: [],
   charcoals: [],
+  electricHeads: [],
 })
 
 interface OrderSnapshot {
@@ -138,10 +140,7 @@ export const useAppDataStore = defineStore('app-data', () => {
   async function fulfillOrder(
     token: string,
     orderId: string,
-    payload: {
-      actualTobaccoIds: string[]
-      packingComment?: string
-    },
+    payload: FulfillOrderPayload,
   ) {
     const updatedOrder = await api.fulfillOrder(token, orderId, payload)
     replaceOrder(updatedOrder)

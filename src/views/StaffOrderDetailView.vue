@@ -2,9 +2,11 @@
 import { computed, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import TobaccoPicker from '@/components/TobaccoPicker.vue'
+import BlendComposer from '@/components/BlendComposer.vue'
+import ReferenceSearchSelect from '@/components/ReferenceSearchSelect.vue'
 import { useAppDataStore } from '@/stores/app-data'
 import { useSessionStore } from '@/stores/session'
+import type { FulfillOrderPayload } from '@/types/app'
 import { formatDateTime } from '@/utils/date'
 
 const route = useRoute()
@@ -12,50 +14,62 @@ const router = useRouter()
 const appDataStore = useAppDataStore()
 const sessionStore = useSessionStore()
 
-const draft = reactive({
-  selectedIds: [] as string[],
+const draft = reactive<FulfillOrderPayload>({
+  actualBlend: [],
+  actualSetup: {
+    heatingSystemType: 'coal',
+    packingStyle: 'kompot',
+    customPackingStyle: '',
+    hookahId: '',
+    bowlId: '',
+    kalaudId: '',
+    charcoalId: '',
+    electricHeadId: '',
+    charcoalCount: 3,
+    warmupMode: 'with_cap' as const,
+    warmupDurationMinutes: 6,
+  },
   packingComment: '',
 })
 
 const orderId = computed(() => String(route.params.id ?? ''))
 const order = computed(() => appDataStore.orders.find((item) => item.id === orderId.value) ?? null)
 
-const timelineLabels = {
-  created: 'Заказ создан',
-  participant_joined: 'К заказу присоединился клиент',
-  participant_table_approved: 'Гость подтверждён за столом',
-  started: 'Заказ взят в работу',
-  delivered: 'Заказ отдан',
-  feedback_received: 'Получен отзыв',
-}
+const hookahOptions = computed(() => appDataStore.references.hookahs.map((item) => ({ id: item.id, title: `${item.manufacturer} ${item.name}` })))
+const bowlOptions = computed(() => appDataStore.references.bowls.map((item) => ({ id: item.id, title: `${item.manufacturer} ${item.name}` })))
+const kalaudOptions = computed(() => appDataStore.references.kalauds.map((item) => ({ id: item.id, title: `${item.manufacturer} ${item.name}` })))
+const charcoalOptions = computed(() => appDataStore.references.charcoals.map((item) => ({ id: item.id, title: `${item.manufacturer} ${item.name}` })))
+const electricHeadOptions = computed(() => appDataStore.references.electricHeads.map((item) => ({ id: item.id, title: `${item.manufacturer} ${item.name}` })))
 
 async function goBack() {
   await router.push('/staff/orders')
 }
 
 async function takeOrder() {
-  if (!sessionStore.accessToken || !order.value) {
-    return
-  }
-
+  if (!sessionStore.accessToken || !order.value) return
   await appDataStore.startOrder(sessionStore.accessToken, order.value.id)
 }
 
 async function approveParticipant(clientUserId: string) {
-  if (!sessionStore.accessToken || !order.value) {
-    return
-  }
-
+  if (!sessionStore.accessToken || !order.value) return
   await appDataStore.approveParticipantTable(sessionStore.accessToken, order.value.id, clientUserId)
 }
 
 async function fulfillOrder() {
-  if (!sessionStore.accessToken || !order.value) {
-    return
-  }
-
+  if (!sessionStore.accessToken || !order.value) return
   await appDataStore.fulfillOrder(sessionStore.accessToken, order.value.id, {
-    actualTobaccoIds: draft.selectedIds,
+    actualBlend: draft.actualBlend,
+    actualSetup: {
+      ...draft.actualSetup,
+      customPackingStyle:
+        draft.actualSetup.packingStyle === 'custom' ? draft.actualSetup.customPackingStyle : undefined,
+      hookahId: draft.actualSetup.hookahId || undefined,
+      bowlId: draft.actualSetup.heatingSystemType === 'coal' ? draft.actualSetup.bowlId || undefined : undefined,
+      kalaudId: draft.actualSetup.heatingSystemType === 'coal' ? draft.actualSetup.kalaudId || undefined : undefined,
+      charcoalId: draft.actualSetup.heatingSystemType === 'coal' ? draft.actualSetup.charcoalId || undefined : undefined,
+      electricHeadId:
+        draft.actualSetup.heatingSystemType === 'electric' ? draft.actualSetup.electricHeadId || undefined : undefined,
+    },
     packingComment: draft.packingComment,
   })
 }
@@ -67,7 +81,7 @@ async function fulfillOrder() {
       <div class="panel__header">
         <div>
           <p class="section-label">{{ order.tableLabel }}</p>
-          <h2>Детальная карточка заказа</h2>
+          <h2>Карточка заказа</h2>
         </div>
         <div class="pill-row">
           <span class="pill">{{ order.status }}</span>
@@ -79,17 +93,14 @@ async function fulfillOrder() {
         <article class="task-card">
           <p class="task-card__status">Создан</p>
           <h4>{{ formatDateTime(order.createdAt) }}</h4>
-          <p>Время оформления заявки по этому столу.</p>
         </article>
         <article class="task-card">
           <p class="task-card__status">Отдан</p>
           <h4>{{ formatDateTime(order.deliveredAt) }}</h4>
-          <p>Когда заказ ушёл гостям со стойки.</p>
         </article>
         <article class="task-card">
           <p class="task-card__status">Последний отзыв</p>
           <h4>{{ formatDateTime(order.feedbackAt) }}</h4>
-          <p>Если отзывов ещё нет, здесь останется пусто.</p>
         </article>
       </div>
     </section>
@@ -98,11 +109,8 @@ async function fulfillOrder() {
       <div class="panel__header">
         <div>
           <p class="section-label">Guests</p>
-          <h3>Люди за столом и их запросы</h3>
+          <h3>Люди за столом</h3>
         </div>
-        <span v-if="order.acceptedBy" class="pill pill--muted">
-          В работе у {{ order.acceptedBy.login }}
-        </span>
       </div>
 
       <div class="participant-list">
@@ -113,41 +121,19 @@ async function fulfillOrder() {
               <h4>{{ formatDateTime(participant.joinedAt) }}</h4>
             </div>
             <span class="pill" :class="{ 'pill--muted': participant.tableApprovalStatus !== 'approved' }">
-              {{
-                participant.tableApprovalStatus === 'approved'
-                  ? 'Подтверждён за столом'
-                  : 'Ожидает подтверждения'
-              }}
+              {{ participant.tableApprovalStatus === 'approved' ? 'Подтверждён' : 'Ожидает подтверждения' }}
             </span>
           </div>
 
           <p>{{ participant.description }}</p>
 
           <div class="pill-row">
-            <span v-for="tobacco in participant.requestedTobaccos" :key="tobacco.id" class="pill">
-              {{ tobacco.brand }} / {{ tobacco.flavorName }}
+            <span v-for="item in participant.requestedBlend" :key="item.tobacco.id" class="pill">
+              {{ item.tobacco.brand }} / {{ item.tobacco.flavorName }} - {{ item.percentage }}%
             </span>
           </div>
 
-          <p v-if="participant.tableApprovedBy" class="section-copy">
-            Подтвердил {{ participant.tableApprovedBy.login }} ·
-            {{ formatDateTime(participant.tableApprovedAt) }}
-          </p>
-
-          <p v-if="participant.feedback" class="section-copy">
-            Отзыв {{ participant.feedback.ratingScore }}/5 ·
-            {{ formatDateTime(participant.feedback.submittedAt) }}
-            <template v-if="participant.feedback.ratingReview">
-              — {{ participant.feedback.ratingReview }}
-            </template>
-          </p>
-
-          <button
-            v-if="participant.tableApprovalStatus !== 'approved'"
-            class="button button--secondary"
-            type="button"
-            @click="approveParticipant(participant.client.id)"
-          >
+          <button v-if="participant.tableApprovalStatus !== 'approved'" class="button button--secondary" type="button" @click="approveParticipant(participant.client.id)">
             Подтвердить за столом
           </button>
         </article>
@@ -157,20 +143,19 @@ async function fulfillOrder() {
     <section class="panel">
       <div class="panel__header">
         <div>
-          <p class="section-label">Timeline</p>
-          <h3>История статусов</h3>
+          <p class="section-label">Requested</p>
+          <h3>Что просили гости</h3>
         </div>
       </div>
 
-      <div class="timeline-list">
-        <article v-for="event in order.timeline" :key="event.id" class="timeline-item">
-          <div class="timeline-item__header">
-            <strong>{{ timelineLabels[event.type] }}</strong>
-            <span>{{ formatDateTime(event.occurredAt) }}</span>
-          </div>
-          <p>{{ event.note }}</p>
-        </article>
+      <div class="pill-row">
+        <span v-for="item in order.requestedBlend" :key="item.tobacco.id" class="pill">
+          {{ item.tobacco.brand }} / {{ item.tobacco.flavorName }} - {{ item.percentage }}%
+        </span>
       </div>
+      <p class="section-copy">
+        Тип: {{ order.requestedSetup?.heatingSystemType === 'electric' ? 'Электрическая чаша' : 'Уголь + калауд' }}
+      </p>
     </section>
 
     <section class="panel">
@@ -181,41 +166,51 @@ async function fulfillOrder() {
         </div>
       </div>
 
-      <div v-if="order.actualTobaccos.length > 0" class="pill-row">
-        <span v-for="tobacco in order.actualTobaccos" :key="tobacco.id" class="pill">
-          {{ tobacco.brand }} / {{ tobacco.flavorName }}
+      <div v-if="order.actualBlend.length > 0" class="pill-row">
+        <span v-for="item in order.actualBlend" :key="item.tobacco.id" class="pill">
+          {{ item.tobacco.brand }} / {{ item.tobacco.flavorName }} - {{ item.percentage }}%
         </span>
       </div>
 
-      <p v-if="order.packingComment" class="section-copy">
-        Комментарий мастера: {{ order.packingComment }}
-      </p>
+      <p v-if="order.packingComment" class="section-copy">Комментарий мастера: {{ order.packingComment }}</p>
 
-      <button
-        v-if="order.status === 'new'"
-        class="button button--secondary"
-        type="button"
-        @click="takeOrder"
-      >
+      <button v-if="order.status === 'new'" class="button button--secondary" type="button" @click="takeOrder">
         Взять в работу
       </button>
 
       <div v-if="order.status === 'new' || order.status === 'in_progress'" class="stack">
-        <TobaccoPicker
-          v-model:selected-ids="draft.selectedIds"
-          title="Фактическая забивка"
-          description="Выберите до трёх вкусов, которые реально пошли в чашу."
+        <BlendComposer
+          v-model="draft.actualBlend"
+          title="Фактический микс"
+          description="Укажите, что реально пошло в чашу и в каких процентах."
           :tobaccos="appDataStore.references.tobaccos"
         />
 
+        <div class="editor-grid">
+          <label class="field">
+            <span>Система прогрева</span>
+            <select v-model="draft.actualSetup.heatingSystemType" class="input">
+              <option value="coal">Уголь + калауд</option>
+              <option value="electric">Электрическая чаша Hookah Pro</option>
+            </select>
+          </label>
+
+          <ReferenceSearchSelect v-model="draft.actualSetup.hookahId" label="Кальян" :options="hookahOptions" />
+        </div>
+
+        <div v-if="draft.actualSetup.heatingSystemType === 'coal'" class="editor-grid">
+          <ReferenceSearchSelect v-model="draft.actualSetup.bowlId" label="Чашка" :options="bowlOptions" />
+          <ReferenceSearchSelect v-model="draft.actualSetup.kalaudId" label="Калауд" :options="kalaudOptions" />
+          <ReferenceSearchSelect v-model="draft.actualSetup.charcoalId" label="Уголь" :options="charcoalOptions" />
+        </div>
+
+        <div v-else class="editor-grid">
+          <ReferenceSearchSelect v-model="draft.actualSetup.electricHeadId" label="Электрическая чаша" :options="electricHeadOptions" />
+        </div>
+
         <label class="field">
           <span>Комментарий мастера</span>
-          <textarea
-            v-model="draft.packingComment"
-            class="input textarea"
-            rows="4"
-            placeholder="Например: сделали мягче, добавили больше холода и убрали лишнюю сладость."
-          />
+          <textarea v-model="draft.packingComment" class="input textarea" rows="4" placeholder="Например: сделал мягче, добавил больше холода и облегчил сладость." />
         </label>
 
         <button class="button button--primary" type="button" @click="fulfillOrder">
@@ -228,9 +223,6 @@ async function fulfillOrder() {
   <section v-else class="panel">
     <p class="section-label">Order not found</p>
     <h2>Заказ не найден</h2>
-    <p class="section-copy">
-      Возможно, он уже не доступен вашей роли или ещё не успел загрузиться в локальное состояние.
-    </p>
-    <button class="button button--ghost" type="button" @click="goBack">Назад к доске</button>
+    <button class="button button--ghost" type="button" @click="goBack">Назад</button>
   </section>
 </template>
