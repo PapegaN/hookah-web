@@ -3,6 +3,7 @@ import type { TobaccoReference } from '@/types/app'
 export interface TobaccoFilters {
   brand: string
   strength: string
+  tag?: string
   search: string
 }
 
@@ -17,14 +18,22 @@ export function filterTobaccos(
       !filters.brand || tobacco.brand.toLowerCase() === filters.brand.toLowerCase()
     const matchesStrength =
       !filters.strength || String(tobacco.estimatedStrengthLevel) === filters.strength
+    const matchesTag =
+      !filters.tag || tobacco.flavorTags.some((tag) => tag.name === filters.tag)
     const matchesSearch =
       !normalizedSearch ||
-      [tobacco.brand, tobacco.line, tobacco.flavorName, tobacco.flavorDescription]
+      [
+        tobacco.brand,
+        tobacco.line,
+        tobacco.flavorName,
+        tobacco.flavorDescription,
+        ...tobacco.flavorTags.map((tag) => tag.name),
+      ]
         .join(' ')
         .toLowerCase()
         .includes(normalizedSearch)
 
-    return tobacco.isActive && matchesBrand && matchesStrength && matchesSearch
+    return tobacco.isActive && tobacco.inStock && matchesBrand && matchesStrength && matchesTag && matchesSearch
   })
 }
 

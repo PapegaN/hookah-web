@@ -8,7 +8,7 @@ import type {
   ReferenceTableColumn,
 } from '@/types/app'
 
-type FieldValue = string | number | boolean | undefined
+type FieldValue = string | number | boolean | string[] | undefined
 type FormState = Record<string, FieldValue>
 
 const props = defineProps<{
@@ -72,7 +72,9 @@ function openEditModal(item: EditableReferenceItem) {
     Object.fromEntries(
       props.fields.map((field) => [
         field.key,
-        item[field.key as keyof EditableReferenceItem] as FieldValue,
+        field.key === 'flavorTags' && 'flavorTags' in item
+          ? item.flavorTags.map((tag) => tag.name).join(', ')
+          : (item[field.key as keyof EditableReferenceItem] as FieldValue),
       ]),
     ),
   )

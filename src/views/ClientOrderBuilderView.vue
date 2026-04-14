@@ -24,6 +24,9 @@ const form = reactive<CreateOrderPayload>({
   tableLabel: tableOptions[0] ?? 'Стол 1',
   description: '',
   requestedBlend: [],
+  wantsCooling: false,
+  wantsMint: false,
+  wantsSpicy: false,
   requestedSetup: {
     heatingSystemType: 'coal',
     packingStyle: 'kompot',
@@ -155,6 +158,21 @@ async function submitOrder() {
       <span>Описание заказа</span>
       <textarea v-model="form.description" class="input textarea" rows="4" placeholder="Например: мягкий ягодный микс с холодком и лёгкой сладостью." />
     </label>
+
+    <div class="editor-grid">
+      <label class="checkbox-row">
+        <input v-model="form.wantsCooling" type="checkbox" />
+        <span>С холодком</span>
+      </label>
+      <label class="checkbox-row">
+        <input v-model="form.wantsMint" type="checkbox" />
+        <span>С мятой</span>
+      </label>
+      <label class="checkbox-row">
+        <input v-model="form.wantsSpicy" type="checkbox" />
+        <span>Пряный</span>
+      </label>
+    </div>
 
     <BlendComposer
       v-model="form.requestedBlend"

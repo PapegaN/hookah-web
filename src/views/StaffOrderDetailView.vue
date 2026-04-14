@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive } from 'vue'
+import { computed, reactive, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import BlendComposer from '@/components/BlendComposer.vue'
@@ -40,6 +40,34 @@ const bowlOptions = computed(() => appDataStore.references.bowls.map((item) => (
 const kalaudOptions = computed(() => appDataStore.references.kalauds.map((item) => ({ id: item.id, title: `${item.manufacturer} ${item.name}` })))
 const charcoalOptions = computed(() => appDataStore.references.charcoals.map((item) => ({ id: item.id, title: `${item.manufacturer} ${item.name}` })))
 const electricHeadOptions = computed(() => appDataStore.references.electricHeads.map((item) => ({ id: item.id, title: `${item.manufacturer} ${item.name}` })))
+
+watchEffect(() => {
+  if (!order.value) return
+  if (draft.actualBlend.length === 0 && order.value.requestedBlend.length > 0) {
+    draft.actualBlend = order.value.requestedBlend.map((item) => ({
+      tobaccoId: item.tobacco.id,
+      percentage: item.percentage,
+    }))
+  }
+  if (!draft.packingComment && order.value.packingComment) {
+    draft.packingComment = order.value.packingComment
+  }
+  if (!draft.actualSetup.hookahId && order.value.requestedSetup) {
+    draft.actualSetup = {
+      heatingSystemType: order.value.requestedSetup.heatingSystemType,
+      packingStyle: order.value.requestedSetup.packingStyle,
+      customPackingStyle: order.value.requestedSetup.customPackingStyle ?? '',
+      hookahId: order.value.requestedSetup.hookah?.id ?? '',
+      bowlId: order.value.requestedSetup.bowl?.id ?? '',
+      kalaudId: order.value.requestedSetup.kalaud?.id ?? '',
+      charcoalId: order.value.requestedSetup.charcoal?.id ?? '',
+      electricHeadId: order.value.requestedSetup.electricHead?.id ?? '',
+      charcoalCount: order.value.requestedSetup.charcoalCount ?? 3,
+      warmupMode: order.value.requestedSetup.warmupMode ?? 'with_cap',
+      warmupDurationMinutes: order.value.requestedSetup.warmupDurationMinutes ?? 6,
+    }
+  }
+})
 
 async function goBack() {
   await router.push('/staff/orders')
@@ -128,6 +156,12 @@ async function fulfillOrder() {
           <p>{{ participant.description }}</p>
 
           <div class="pill-row">
+            <span v-if="participant.wantsCooling" class="pill pill--muted">С холодком</span>
+            <span v-if="participant.wantsMint" class="pill pill--muted">С мятой</span>
+            <span v-if="participant.wantsSpicy" class="pill pill--muted">Пряный</span>
+          </div>
+
+          <div class="pill-row">
             <span v-for="item in participant.requestedBlend" :key="item.tobacco.id" class="pill">
               {{ item.tobacco.brand }} / {{ item.tobacco.flavorName }} - {{ item.percentage }}%
             </span>
@@ -153,9 +187,15 @@ async function fulfillOrder() {
           {{ item.tobacco.brand }} / {{ item.tobacco.flavorName }} - {{ item.percentage }}%
         </span>
       </div>
-      <p class="section-copy">
-        Тип: {{ order.requestedSetup?.heatingSystemType === 'electric' ? 'Электрическая чаша' : 'Уголь + калауд' }}
-      </p>
+      <div class="setup-summary">
+        <p class="section-copy">Тип: {{ order.requestedSetup?.heatingSystemType === 'electric' ? 'Электрическая чаша' : 'Уголь + калауд' }}</p>
+        <p class="section-copy">Забивка: {{ order.requestedSetup?.packingStyle === 'custom' ? order.requestedSetup?.customPackingStyle : order.requestedSetup?.packingStyle }}</p>
+        <p class="section-copy" v-if="order.requestedSetup?.hookah">Кальян: {{ order.requestedSetup.hookah.manufacturer }} {{ order.requestedSetup.hookah.name }}</p>
+        <p class="section-copy" v-if="order.requestedSetup?.bowl">Чашка: {{ order.requestedSetup.bowl.manufacturer }} {{ order.requestedSetup.bowl.name }}</p>
+        <p class="section-copy" v-if="order.requestedSetup?.kalaud">Калауд: {{ order.requestedSetup.kalaud.manufacturer }} {{ order.requestedSetup.kalaud.name }}</p>
+        <p class="section-copy" v-if="order.requestedSetup?.charcoal">Уголь: {{ order.requestedSetup.charcoal.manufacturer }} {{ order.requestedSetup.charcoal.name }}</p>
+        <p class="section-copy" v-if="order.requestedSetup?.electricHead">Электрическая чаша: {{ order.requestedSetup.electricHead.manufacturer }} {{ order.requestedSetup.electricHead.name }}</p>
+      </div>
     </section>
 
     <section class="panel">
@@ -173,6 +213,10 @@ async function fulfillOrder() {
       </div>
 
       <p v-if="order.packingComment" class="section-copy">Комментарий мастера: {{ order.packingComment }}</p>
+      <div v-if="order.actualSetup" class="setup-summary">
+        <p class="section-copy">Фактический тип: {{ order.actualSetup.heatingSystemType === 'electric' ? 'Электрическая чаша' : 'Уголь + калауд' }}</p>
+        <p class="section-copy">Фактическая забивка: {{ order.actualSetup.packingStyle === 'custom' ? order.actualSetup.customPackingStyle : order.actualSetup.packingStyle }}</p>
+      </div>
 
       <button v-if="order.status === 'new'" class="button button--secondary" type="button" @click="takeOrder">
         Взять в работу

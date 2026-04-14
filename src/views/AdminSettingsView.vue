@@ -1,10 +1,10 @@
 ﻿<script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 
 import { ApiError, api } from '@/lib/api'
 import { useAppDataStore } from '@/stores/app-data'
 import { useSessionStore } from '@/stores/session'
-import type { SettingsResource } from '@/types/app'
+import type { BackupAuditEvent, SettingsResource } from '@/types/app'
 
 interface ResourceCard {
   resource: SettingsResource
@@ -18,8 +18,14 @@ const importFiles = reactive<Partial<Record<SettingsResource, File | null>>>({})
 const isBusy = ref(false)
 const statusMessage = ref<string | null>(null)
 const errorMessage = ref<string | null>(null)
+const backupAuditEvents = ref<BackupAuditEvent[]>([])
 
 const resourceCards: ResourceCard[] = [
+  {
+    resource: 'tobacco_tags',
+    title: 'Теги вкусов',
+    description: 'Справочник тегов для фильтрации табака и поиска по палитре.',
+  },
   {
     resource: 'users',
     title: 'Пользователи',
@@ -56,6 +62,18 @@ const resourceCards: ResourceCard[] = [
     description: 'Заявки по столам, статусы, фактические забивки и отзывы.',
   },
 ]
+
+onMounted(async () => {
+  if (!sessionStore.accessToken) {
+    return
+  }
+
+  const response = await api.exportSettings<BackupAuditEvent[]>(
+    sessionStore.accessToken,
+    'backup_audit',
+  )
+  backupAuditEvents.value = response.data
+})
 
 async function handleExport(resource: SettingsResource) {
   if (!sessionStore.accessToken) {
@@ -199,6 +217,29 @@ function resolveErrorMessage(error: unknown) {
       <button class="button button--secondary" type="button" :disabled="isBusy" @click="handleImport('backup')">
         Импортировать backup
       </button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel__header">
+      <div>
+        <p class="section-label">Backup audit</p>
+        <h3>Журнал backup и restore</h3>
+      </div>
+    </div>
+
+    <div class="timeline-list">
+      <article v-for="event in backupAuditEvents" :key="event.id" class="timeline-item">
+        <div class="timeline-item__header">
+          <strong>{{ event.actionName }} / {{ event.resourceName }}</strong>
+          <span>{{ event.createdAt }}</span>
+        </div>
+        <p>
+          Версия {{ event.schemaVersion }}, записей: {{ event.itemCount }}, checksum:
+          {{ event.checksumSha256.slice(0, 12) }}...
+        </p>
+        <p v-if="event.actor">Инициатор: {{ event.actor.login }}</p>
+      </article>
     </div>
   </section>
 

@@ -18,6 +18,7 @@ import type {
 
 const emptyReferences = (): ReferencesSnapshot => ({
   tobaccos: [],
+  tobaccoTags: [],
   hookahs: [],
   bowls: [],
   kalauds: [],

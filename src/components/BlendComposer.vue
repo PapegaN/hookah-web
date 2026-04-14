@@ -18,11 +18,15 @@ const emit = defineEmits<{
 const filters = reactive({
   brand: '',
   strength: '',
+  tag: '',
   search: '',
 })
 
 const selectedIds = computed(() => props.modelValue.map((item) => item.tobaccoId))
 const brandOptions = computed(() => [...new Set(props.tobaccos.map((item) => item.brand))].sort())
+const tagOptions = computed(() =>
+  [...new Set(props.tobaccos.flatMap((item) => item.flavorTags.map((tag) => tag.name)))].sort(),
+)
 const filteredTobaccos = computed(() => filterTobaccos(props.tobaccos, filters))
 const totalPercentage = computed(() =>
   props.modelValue.reduce((sum, item) => sum + item.percentage, 0),
@@ -94,6 +98,14 @@ function rebalance(items: BlendComponentInput[]) {
         </select>
       </label>
 
+      <label class="field">
+        <span>Тег вкуса</span>
+        <select v-model="filters.tag" class="input">
+          <option value="">Любой</option>
+          <option v-for="tag in tagOptions" :key="tag" :value="tag">{{ tag }}</option>
+        </select>
+      </label>
+
       <label class="field field--wide">
         <span>Поиск</span>
         <input v-model="filters.search" class="input" type="text" placeholder="Например: mint, pear, mango" />
@@ -107,6 +119,11 @@ function rebalance(items: BlendComponentInput[]) {
             <p class="catalog-card__eyebrow">{{ tobacco.brand }} / {{ tobacco.line }}</p>
             <h4>{{ tobacco.flavorName }}</h4>
             <p>{{ tobacco.flavorDescription }}</p>
+            <div class="pill-row">
+              <span v-for="tag in tobacco.flavorTags" :key="tag.id" class="pill pill--muted">
+                {{ tag.name }}
+              </span>
+            </div>
           </div>
 
           <button

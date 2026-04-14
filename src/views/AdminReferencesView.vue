@@ -48,7 +48,14 @@ const tobaccoFields: ReferenceFieldConfig[] = [
   { key: 'estimatedStrengthLevel', label: 'РћС†РµРЅРѕС‡РЅР°СЏ РєСЂРµРїРѕСЃС‚СЊ', kind: 'number', min: 1, max: 5 },
   { key: 'brightnessLevel', label: 'РЇСЂРєРѕСЃС‚СЊ', kind: 'number', min: 1, max: 5 },
   { key: 'flavorDescription', label: 'РћРїРёСЃР°РЅРёРµ РІРєСѓСЃР°', kind: 'textarea' },
+  { key: 'flavorTags', label: 'Теги вкуса (через запятую)', kind: 'text' },
+  { key: 'inStock', label: 'В наличии', kind: 'boolean' },
   { key: 'isActive', label: 'РђРєС‚РёРІРµРЅ', kind: 'boolean' },
+]
+
+const tobaccoTagFields: ReferenceFieldConfig[] = [
+  { key: 'name', label: 'Название', kind: 'text' },
+  { key: 'isActive', label: 'Активен', kind: 'boolean' },
 ]
 
 const hookahFields: ReferenceFieldConfig[] = [
@@ -117,6 +124,28 @@ const referenceTabs: ReferenceTabConfig[] = [
         label: 'РЎС‚Р°С‚СѓСЃ',
         getValue: (item) => (item.isActive ? 'РђРєС‚РёРІРµРЅ' : 'РЎРєСЂС‹С‚'),
       },
+      {
+        key: 'inStock',
+        label: 'Наличие',
+        getValue: (item) => ('inStock' in item ? (item.inStock ? 'В наличии' : 'Нет в наличии') : ''),
+      },
+      {
+        key: 'flavorTags',
+        label: 'Теги',
+        getValue: (item) => ('flavorTags' in item ? item.flavorTags.map((tag) => tag.name).join(', ') : ''),
+      },
+    ],
+  },
+  {
+    key: 'tobacco_tags',
+    label: 'Теги вкусов',
+    title: 'Справочник тегов табака',
+    description: 'Используется для фильтрации и поиска по вкусам. Один табак может иметь несколько тегов.',
+    addButtonLabel: 'Добавить тег',
+    fields: tobaccoTagFields,
+    columns: [
+      { key: 'name', label: 'Название', getValue: (item) => ('name' in item ? item.name : '') },
+      { key: 'isActive', label: 'Статус', getValue: (item) => (item.isActive ? 'Активен' : 'Скрыт') },
     ],
   },
   {
@@ -237,6 +266,8 @@ const currentItems = computed<EditableReferenceItem[]>(() => {
   switch (activeTab.value) {
     case 'tobaccos':
       return appDataStore.references.tobaccos
+    case 'tobacco_tags':
+      return appDataStore.references.tobaccoTags
     case 'hookahs':
       return appDataStore.references.hookahs
     case 'bowls':
@@ -245,6 +276,8 @@ const currentItems = computed<EditableReferenceItem[]>(() => {
       return appDataStore.references.kalauds
     case 'charcoals':
       return appDataStore.references.charcoals
+    case 'electric_heads':
+      return appDataStore.references.electricHeads
     default:
       return []
   }
@@ -252,25 +285,54 @@ const currentItems = computed<EditableReferenceItem[]>(() => {
 
 async function createItem(
   entityType: ReferenceEntityType,
-  payload: Record<string, string | number | boolean | undefined>,
+  payload: Record<string, string | number | boolean | string[] | undefined>,
 ) {
   if (!sessionStore.accessToken) {
     return
   }
 
-  await appDataStore.createReference(sessionStore.accessToken, entityType, payload)
+  await appDataStore.createReference(
+    sessionStore.accessToken,
+    entityType,
+    normalizeReferencePayload(entityType, payload),
+  )
 }
 
 async function updateItem(
   entityType: ReferenceEntityType,
   itemId: string,
-  payload: Record<string, string | number | boolean | undefined>,
+  payload: Record<string, string | number | boolean | string[] | undefined>,
 ) {
   if (!sessionStore.accessToken) {
     return
   }
 
-  await appDataStore.updateReference(sessionStore.accessToken, entityType, itemId, payload)
+  await appDataStore.updateReference(
+    sessionStore.accessToken,
+    entityType,
+    itemId,
+    normalizeReferencePayload(entityType, payload),
+  )
+}
+
+function normalizeReferencePayload(
+  entityType: ReferenceEntityType,
+  payload: Record<string, string | number | boolean | string[] | undefined>,
+) {
+  if (entityType !== 'tobaccos') {
+    return payload
+  }
+
+  return {
+    ...payload,
+    flavorTags:
+      typeof payload.flavorTags === 'string'
+        ? payload.flavorTags
+            .split(',')
+            .map((item) => item.trim())
+            .filter((item) => item.length > 0)
+        : [],
+  }
 }
 </script>
 

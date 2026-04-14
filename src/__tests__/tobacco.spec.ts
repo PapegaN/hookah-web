@@ -17,6 +17,8 @@ const tobaccos: TobaccoReference[] = [
     estimatedStrengthLevel: 5,
     brightnessLevel: 4,
     flavorDescription: 'Icy mint',
+    flavorTags: [{ id: 'tag-a', name: 'Мятный', isActive: true }],
+    inStock: true,
     isActive: true,
   },
   {
@@ -28,6 +30,8 @@ const tobaccos: TobaccoReference[] = [
     estimatedStrengthLevel: 3,
     brightnessLevel: 3,
     flavorDescription: 'Creamy kiwi mix',
+    flavorTags: [{ id: 'tag-b', name: 'Фруктовый', isActive: true }],
+    inStock: true,
     isActive: true,
   },
   {
@@ -39,6 +43,8 @@ const tobaccos: TobaccoReference[] = [
     estimatedStrengthLevel: 2,
     brightnessLevel: 2,
     flavorDescription: 'Should not appear',
+    flavorTags: [],
+    inStock: false,
     isActive: false,
   },
 ]

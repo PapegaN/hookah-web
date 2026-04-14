@@ -21,13 +21,20 @@ export interface UserPreview {
 
 export type ReferenceEntityType =
   | 'tobaccos'
+  | 'tobacco_tags'
   | 'hookahs'
   | 'bowls'
   | 'kalauds'
   | 'charcoals'
   | 'electric_heads'
 
-export type SettingsResource = ReferenceEntityType | 'users' | 'orders' | 'backup'
+export type SettingsResource = ReferenceEntityType | 'users' | 'orders' | 'backup' | 'backup_audit'
+
+export interface TobaccoTagReference {
+  id: string
+  name: string
+  isActive: boolean
+}
 
 export interface AppUser {
   id: string
@@ -51,6 +58,8 @@ export interface TobaccoReference {
   estimatedStrengthLevel: number
   brightnessLevel: number
   flavorDescription: string
+  flavorTags: TobaccoTagReference[]
+  inStock: boolean
   isActive: boolean
 }
 
@@ -99,6 +108,7 @@ export interface ElectricHeadReference {
 
 export interface ReferencesSnapshot {
   tobaccos: TobaccoReference[]
+  tobaccoTags: TobaccoTagReference[]
   hookahs: HookahReference[]
   bowls: BowlReference[]
   kalauds: KalaudReference[]
@@ -143,6 +153,9 @@ export interface OrderParticipant {
   joinedAt: string
   requestedBlend: OrderBlendComponent[]
   requestedTobaccos: TobaccoReference[]
+  wantsCooling: boolean
+  wantsMint: boolean
+  wantsSpicy: boolean
   tableApprovalStatus: TableApprovalStatus
   tableApprovedAt?: string
   tableApprovedBy?: UserPreview
@@ -232,6 +245,8 @@ export interface UpsertReferencePayload {
   estimatedStrengthLevel?: number
   brightnessLevel?: number
   flavorDescription?: string
+  flavorTags?: string[] | string
+  inStock?: boolean
   manufacturer?: string
   name?: string
   innerDiameterMm?: number
@@ -248,6 +263,9 @@ export interface CreateOrderPayload {
   tableLabel: string
   description: string
   requestedBlend: BlendComponentInput[]
+  wantsCooling?: boolean
+  wantsMint?: boolean
+  wantsSpicy?: boolean
   requestedSetup: {
     heatingSystemType: HeatingSystemType
     packingStyle?: PackingStyle
@@ -298,8 +316,21 @@ export interface SettingsImportResponse {
   importedCount: number
 }
 
+export interface BackupAuditEvent {
+  id: string
+  actor?: UserPreview
+  resourceName: string
+  actionName: string
+  schemaVersion: string
+  checksumSha256: string
+  itemCount: number
+  details: Record<string, unknown>
+  createdAt: string
+}
+
 export type EditableReferenceItem =
   | TobaccoReference
+  | TobaccoTagReference
   | HookahReference
   | BowlReference
   | KalaudReference
