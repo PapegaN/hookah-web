@@ -32,11 +32,16 @@ const navigationItems = computed(() => {
         ...sharedItems,
         { name: 'Пользователи', to: '/admin/users' },
         { name: 'Справочники', to: '/admin/references' },
+        { name: 'Сканер', to: '/staff/marking' },
         { name: 'Заказы', to: '/staff/orders' },
         { name: 'Настройки', to: '/admin/settings' },
       ]
     case 'hookah_master':
-      return [...sharedItems, { name: 'Заказы', to: '/staff/orders' }]
+      return [
+        ...sharedItems,
+        { name: 'Сканер', to: '/staff/marking' },
+        { name: 'Заказы', to: '/staff/orders' },
+      ]
     case 'client':
       return [
         ...sharedItems,
@@ -192,7 +197,8 @@ async function openNotification(orderId: string, notificationId: string) {
         <p class="eyebrow">Hookah Lounge Control</p>
         <h1>Адаптивная панель кальянной</h1>
         <p class="section-copy">
-          Управление пользователями, справочниками, столами и заказами в одном интерфейсе.
+          Управление пользователями, справочниками, заказами и быстрым добавлением табака в одном
+          интерфейсе.
         </p>
       </div>
 

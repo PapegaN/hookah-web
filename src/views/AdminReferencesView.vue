@@ -44,6 +44,7 @@ const tobaccoFields: ReferenceFieldConfig[] = [
   { key: 'brand', label: 'Р‘СЂРµРЅРґ', kind: 'text' },
   { key: 'line', label: 'Р›РёРЅРµР№РєР°', kind: 'text' },
   { key: 'flavorName', label: 'Р’РєСѓСЃ', kind: 'text' },
+  { key: 'markingCode', label: 'Честный знак', kind: 'text' },
   { key: 'lineStrengthLevel', label: 'РљСЂРµРїРѕСЃС‚СЊ Р»РёРЅРµР№РєРё', kind: 'number', min: 1, max: 5 },
   { key: 'estimatedStrengthLevel', label: 'РћС†РµРЅРѕС‡РЅР°СЏ РєСЂРµРїРѕСЃС‚СЊ', kind: 'number', min: 1, max: 5 },
   { key: 'brightnessLevel', label: 'РЇСЂРєРѕСЃС‚СЊ', kind: 'number', min: 1, max: 5 },
@@ -109,6 +110,11 @@ const referenceTabs: ReferenceTabConfig[] = [
       { key: 'brand', label: 'Р‘СЂРµРЅРґ', getValue: (item) => ('brand' in item ? item.brand : '') },
       { key: 'line', label: 'Р›РёРЅРµР№РєР°', getValue: (item) => ('line' in item ? item.line : '') },
       { key: 'flavorName', label: 'Р’РєСѓСЃ', getValue: (item) => ('flavorName' in item ? item.flavorName : '') },
+      {
+        key: 'markingCode',
+        label: 'Честный знак',
+        getValue: (item) => ('markingCode' in item ? item.markingCode ?? 'Не указан' : ''),
+      },
       {
         key: 'estimatedStrengthLevel',
         label: 'РљСЂРµРїРѕСЃС‚СЊ',
@@ -372,6 +378,7 @@ function normalizeReferencePayload(
     @update="updateItem"
   />
 </template>
+
 
 
 

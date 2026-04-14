@@ -54,6 +54,7 @@ export interface TobaccoReference {
   brand: string
   line: string
   flavorName: string
+  markingCode?: string
   lineStrengthLevel: number
   estimatedStrengthLevel: number
   brightnessLevel: number
@@ -241,6 +242,7 @@ export interface UpsertReferencePayload {
   brand?: string
   line?: string
   flavorName?: string
+  markingCode?: string
   lineStrengthLevel?: number
   estimatedStrengthLevel?: number
   brightnessLevel?: number

@@ -104,6 +104,15 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/staff/marking',
+    name: 'staff-marking',
+    component: () => import('@/views/TobaccoScannerView.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['admin', 'hookah_master'],
+    },
+  },
+  {
     path: '/client/order/new',
     name: 'client-order-new',
     component: () => import('@/views/ClientOrderBuilderView.vue'),

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 
 import type {
@@ -31,7 +31,7 @@ const editingItemId = ref<string | null>(null)
 const modalDraft = reactive<FormState>({})
 
 const modalTitle = computed(() =>
-  editingItemId.value ? `Редактировать: ${props.title}` : `Добавить: ${props.title}`,
+  editingItemId.value ? `Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ: ${props.title}` : `Р”РѕР±Р°РІРёС‚СЊ: ${props.title}`,
 )
 
 const suggestionsByField = computed<Record<string, string[]>>(() =>
@@ -171,25 +171,25 @@ function getSuggestionListId(key: string) {
             <th v-for="column in columns" :key="column.key" scope="col">
               {{ column.label }}
             </th>
-            <th scope="col">Действия</th>
+            <th scope="col">Р”РµР№СЃС‚РІРёСЏ</th>
           </tr>
         </thead>
 
         <tbody>
           <tr v-for="item in items" :key="item.id">
-            <td v-for="column in columns" :key="column.key">
+            <td v-for="column in columns" :key="column.key" :data-label="column.label">
               {{ column.getValue(item) }}
             </td>
-            <td>
+            <td data-label="Действия">
               <button class="button button--ghost" type="button" @click="openEditModal(item)">
-                Изменить
+                РР·РјРµРЅРёС‚СЊ
               </button>
             </td>
           </tr>
 
           <tr v-if="items.length === 0">
             <td :colspan="columns.length + 1" class="data-table__empty">
-              Пока в этом справочнике нет записей.
+              РџРѕРєР° РІ СЌС‚РѕРј СЃРїСЂР°РІРѕС‡РЅРёРєРµ РЅРµС‚ Р·Р°РїРёСЃРµР№.
             </td>
           </tr>
         </tbody>
@@ -205,7 +205,7 @@ function getSuggestionListId(key: string) {
             <p class="section-label">Modal editor</p>
             <h3>{{ modalTitle }}</h3>
           </div>
-          <button class="button button--ghost" type="button" @click="closeModal">Закрыть</button>
+          <button class="button button--ghost" type="button" @click="closeModal">Р—Р°РєСЂС‹С‚СЊ</button>
         </div>
 
         <div class="editor-grid">
@@ -287,12 +287,14 @@ function getSuggestionListId(key: string) {
         </div>
 
         <div class="modal-actions">
-          <button class="button button--ghost" type="button" @click="closeModal">Отмена</button>
+          <button class="button button--ghost" type="button" @click="closeModal">РћС‚РјРµРЅР°</button>
           <button class="button button--primary" type="button" @click="submitModal">
-            Сохранить
+            РЎРѕС…СЂР°РЅРёС‚СЊ
           </button>
         </div>
       </section>
     </div>
   </Teleport>
 </template>
+
+
