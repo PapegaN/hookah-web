@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, reactive, ref } from 'vue'
 
 import { useAppDataStore } from '@/stores/app-data'
 import { useSessionStore } from '@/stores/session'
-import type { UpsertReferencePayload } from '@/types/app'
+import type { TobaccoReference, UpsertReferencePayload } from '@/types/app'
 
 interface BarcodeDetectorResult {
   rawValue?: string
@@ -18,10 +18,12 @@ interface BarcodeDetectorConstructor {
   getSupportedFormats?: () => Promise<string[]>
 }
 
-declare global {
-  interface Window {
-    BarcodeDetector?: BarcodeDetectorConstructor
-  }
+interface ParsedMarkingCode {
+  normalizedCode: string
+  gtin?: string
+  serial?: string
+  cryptoTail?: string
+  parserLabel: string
 }
 
 interface TobaccoDraft {
@@ -29,12 +31,19 @@ interface TobaccoDraft {
   line: string
   flavorName: string
   markingCode: string
+  markingGtin: string
   lineStrengthLevel: number
   estimatedStrengthLevel: number
   brightnessLevel: number
   flavorDescription: string
   inStock: boolean
   isActive: boolean
+}
+
+declare global {
+  interface Window {
+    BarcodeDetector?: BarcodeDetectorConstructor
+  }
 }
 
 const appDataStore = useAppDataStore()
@@ -52,26 +61,20 @@ const scanError = ref('')
 const submitError = ref('')
 const submitSuccess = ref('')
 const selectedTagNames = ref<string[]>([])
+const enrichmentSource = ref('')
 
-const draft = reactive<TobaccoDraft>({
-  brand: '',
-  line: '',
-  flavorName: '',
-  markingCode: '',
-  lineStrengthLevel: 3,
-  estimatedStrengthLevel: 3,
-  brightnessLevel: 3,
-  flavorDescription: '',
-  inStock: true,
-  isActive: true,
-})
+const draft = reactive<TobaccoDraft>(buildEmptyDraft())
 
 const activeTobaccoTags = computed(() =>
   appDataStore.references.tobaccoTags.filter((tag) => tag.isActive),
 )
 
-const brandSuggestions = computed(() => buildSuggestions(appDataStore.references.tobaccos.map((item) => item.brand)))
-const lineSuggestions = computed(() => buildSuggestions(appDataStore.references.tobaccos.map((item) => item.line)))
+const brandSuggestions = computed(() =>
+  buildSuggestions(appDataStore.references.tobaccos.map((item) => item.brand)),
+)
+const lineSuggestions = computed(() =>
+  buildSuggestions(appDataStore.references.tobaccos.map((item) => item.line)),
+)
 const flavorSuggestions = computed(() =>
   buildSuggestions(appDataStore.references.tobaccos.map((item) => item.flavorName)),
 )
@@ -80,8 +83,10 @@ const canUseLiveScanner = computed(
   () => typeof window !== 'undefined' && Boolean(window.BarcodeDetector && navigator.mediaDevices?.getUserMedia),
 )
 
+const parsedMarking = computed(() => parseMarkingCode(draft.markingCode))
+
 const duplicateTobacco = computed(() => {
-  const normalizedCode = draft.markingCode.trim()
+  const normalizedCode = parsedMarking.value?.normalizedCode
   if (!normalizedCode) {
     return undefined
   }
@@ -89,10 +94,100 @@ const duplicateTobacco = computed(() => {
   return appDataStore.references.tobaccos.find((item) => item.markingCode === normalizedCode)
 })
 
+const matchedSkuByGtin = computed(() => {
+  const gtin = parsedMarking.value?.gtin
+  if (!gtin) {
+    return undefined
+  }
+
+  return appDataStore.references.tobaccos.find(
+    (item) => item.markingGtin === gtin && item.markingCode !== parsedMarking.value?.normalizedCode,
+  )
+})
+
+function buildEmptyDraft(): TobaccoDraft {
+  return {
+    brand: '',
+    line: '',
+    flavorName: '',
+    markingCode: '',
+    markingGtin: '',
+    lineStrengthLevel: 3,
+    estimatedStrengthLevel: 3,
+    brightnessLevel: 3,
+    flavorDescription: '',
+    inStock: true,
+    isActive: true,
+  }
+}
+
 function buildSuggestions(values: string[]) {
   return [...new Set(values.map((item) => item.trim()).filter(Boolean))].sort((left, right) =>
     left.localeCompare(right, 'ru'),
   )
+}
+
+function parseMarkingCode(input: string): ParsedMarkingCode | undefined {
+  const normalizedCode = input.replace(/\u001d/g, '').replace(/\s+/g, '').trim()
+
+  if (!normalizedCode) {
+    return undefined
+  }
+
+  const raw = normalizedCode.startsWith(']d2') ? normalizedCode.slice(3) : normalizedCode
+
+  const ai01 = raw.match(/01(\d{14})/)
+  const ai21 = raw.match(/21([0-9A-Za-z!\"%&'()*+,\-./:;<=>?_]{1,20})/)
+  const ai91 = raw.match(/91([0-9A-Za-z]{1,90})/)
+
+  return {
+    normalizedCode: raw,
+    gtin: ai01?.[1],
+    serial: ai21?.[1],
+    cryptoTail: ai91?.[1],
+    parserLabel: ai01 ? 'GS1 Data Matrix' : 'Raw code',
+  }
+}
+
+function hydrateDraftFromKnownSku(item: TobaccoReference) {
+  draft.brand = item.brand
+  draft.line = item.line
+  draft.flavorName = item.flavorName
+  draft.markingGtin = item.markingGtin ?? parsedMarking.value?.gtin ?? ''
+  draft.lineStrengthLevel = item.lineStrengthLevel
+  draft.estimatedStrengthLevel = item.estimatedStrengthLevel
+  draft.brightnessLevel = item.brightnessLevel
+  draft.flavorDescription = item.flavorDescription
+  draft.inStock = true
+  draft.isActive = item.isActive
+  selectedTagNames.value = item.flavorTags.map((tag) => tag.name)
+}
+
+function enrichDraftFromScan(code: string) {
+  draft.markingCode = code
+  draft.markingGtin = parseMarkingCode(code)?.gtin ?? ''
+  submitSuccess.value = ''
+  submitError.value = ''
+  scanError.value = ''
+  enrichmentSource.value = ''
+
+  if (duplicateTobacco.value) {
+    hydrateDraftFromKnownSku(duplicateTobacco.value)
+    enrichmentSource.value = 'Точный код уже есть в каталоге, карточка заполнена по существующей позиции.'
+    statusMessage.value = 'Найдено полное совпадение маркировки. Проверьте карточку и при необходимости обновите наличие.'
+    return
+  }
+
+  if (matchedSkuByGtin.value) {
+    hydrateDraftFromKnownSku(matchedSkuByGtin.value)
+    enrichmentSource.value = 'Нашли знакомый SKU по GTIN и подтянули производителя, линейку и описание.'
+    statusMessage.value = 'Код разобран, товар распознан по GTIN. Осталось подтвердить карточку.'
+    return
+  }
+
+  statusMessage.value = parsedMarking.value?.gtin
+    ? 'Код разобран, GTIN определён. Заполните карточку нового SKU и сохраните табак.'
+    : 'Код считан, но определить GTIN не удалось. Проверьте строку и заполните карточку вручную.'
 }
 
 async function ensureDetector() {
@@ -158,7 +253,8 @@ async function startCameraScanner() {
           return
         }
       } catch {
-        scanError.value = 'Не удалось распознать код в текущем кадре. Попробуйте изменить угол или освещение.'
+        scanError.value =
+          'Не удалось распознать код в текущем кадре. Попробуйте изменить угол, убрать блики или поднести банку ближе.'
       }
 
       scanLoopId.value = window.setTimeout(() => {
@@ -166,7 +262,7 @@ async function startCameraScanner() {
       }, 700)
     }
 
-    statusMessage.value = 'Наведите камеру на честный знак или QR/Data Matrix код упаковки.'
+    statusMessage.value = 'Наведите камеру на честный знак упаковки.'
     await scanFrame()
   } catch (error) {
     scanError.value = error instanceof Error ? error.message : 'Не удалось открыть камеру.'
@@ -225,11 +321,17 @@ async function handleImageScan(event: Event) {
 }
 
 function applyScannedCode(code: string) {
-  draft.markingCode = code
-  submitSuccess.value = ''
-  scanError.value = ''
-  statusMessage.value = 'Код считан. Проверьте карточку табака и сохраните позицию.'
   stopScanner()
+  enrichDraftFromScan(code)
+}
+
+function parseCurrentCode() {
+  if (!draft.markingCode.trim()) {
+    scanError.value = 'Введите код маркировки или отсканируйте упаковку.'
+    return
+  }
+
+  enrichDraftFromScan(draft.markingCode)
 }
 
 function toggleTag(tagName: string) {
@@ -253,6 +355,7 @@ async function submitTobacco() {
       line: draft.line.trim(),
       flavorName: draft.flavorName.trim(),
       markingCode: draft.markingCode.trim() || undefined,
+      markingGtin: draft.markingGtin.trim() || undefined,
       lineStrengthLevel: draft.lineStrengthLevel,
       estimatedStrengthLevel: draft.estimatedStrengthLevel,
       brightnessLevel: draft.brightnessLevel,
@@ -264,8 +367,8 @@ async function submitTobacco() {
 
     await appDataStore.createReference(sessionStore.accessToken, 'tobaccos', payload)
 
-    submitSuccess.value = 'Табак добавлен в каталог и сразу доступен в справочнике.'
-    statusMessage.value = 'При необходимости можно сразу отсканировать следующую банку.'
+    submitSuccess.value = 'Карточка табака сохранена в каталоге.'
+    statusMessage.value = 'Можно сразу переходить к следующей банке.'
     resetDraft()
   } catch (error) {
     submitError.value = error instanceof Error ? error.message : 'Не удалось сохранить табак.'
@@ -275,17 +378,11 @@ async function submitTobacco() {
 }
 
 function resetDraft() {
-  draft.brand = ''
-  draft.line = ''
-  draft.flavorName = ''
-  draft.markingCode = ''
-  draft.lineStrengthLevel = 3
-  draft.estimatedStrengthLevel = 3
-  draft.brightnessLevel = 3
-  draft.flavorDescription = ''
-  draft.inStock = true
-  draft.isActive = true
+  Object.assign(draft, buildEmptyDraft())
   selectedTagNames.value = []
+  enrichmentSource.value = ''
+  scanError.value = ''
+  submitError.value = ''
 }
 
 onBeforeUnmount(() => {
@@ -298,10 +395,10 @@ onBeforeUnmount(() => {
     <div class="scanner-hero">
       <div>
         <p class="section-label">Marking scanner</p>
-        <h2>Добавление табака по честному знаку</h2>
+        <h2>Сканер честного знака</h2>
         <p class="section-copy">
-          Экран рассчитан на телефон: можно считать Data Matrix код камерой или загрузить фото, а затем
-          сразу оформить новую позицию каталога.
+          Сценарий для телефона: считываем Data Matrix, разбираем GTIN, пытаемся распознать SKU и
+          заполняем карточку табака до состояния “проверь и подтверди”.
         </p>
       </div>
 
@@ -316,7 +413,7 @@ onBeforeUnmount(() => {
         <div class="editor-card__header">
           <div>
             <p class="section-label">Camera</p>
-            <h3>Сканирование маркировки</h3>
+            <h3>Сканирование упаковки</h3>
           </div>
           <div class="pill-row">
             <button
@@ -328,12 +425,7 @@ onBeforeUnmount(() => {
             >
               {{ isScanning ? 'Камера активна' : 'Открыть камеру' }}
             </button>
-            <button
-              v-if="isScanning"
-              class="button button--ghost"
-              type="button"
-              @click="stopScanner"
-            >
+            <button v-if="isScanning" class="button button--ghost" type="button" @click="stopScanner">
               Остановить
             </button>
           </div>
@@ -357,17 +449,50 @@ onBeforeUnmount(() => {
 
         <label class="field field--wide">
           <span>Код маркировки</span>
-          <input v-model="draft.markingCode" class="input" type="text" placeholder="Вставьте код вручную или получите его из сканера" />
+          <input
+            v-model="draft.markingCode"
+            class="input"
+            type="text"
+            placeholder="Вставьте строку вручную, если код уже считан внешним сканером"
+          />
         </label>
+
+        <div class="pill-row">
+          <button class="button button--secondary" type="button" @click="parseCurrentCode">
+            Разобрать текущий код
+          </button>
+        </div>
+
+        <div v-if="parsedMarking" class="stats-grid">
+          <article class="metric-card">
+            <p class="section-label">Format</p>
+            <strong>{{ parsedMarking.parserLabel }}</strong>
+            <p class="section-copy">Нормализованный формат для поиска и сохранения</p>
+          </article>
+          <article class="metric-card">
+            <p class="section-label">GTIN</p>
+            <strong>{{ parsedMarking.gtin ?? 'Не найден' }}</strong>
+            <p class="section-copy">Используем как идентификатор SKU</p>
+          </article>
+          <article class="metric-card">
+            <p class="section-label">Serial</p>
+            <strong>{{ parsedMarking.serial ?? 'Не найден' }}</strong>
+            <p class="section-copy">Серийная часть упаковки</p>
+          </article>
+        </div>
 
         <p v-if="statusMessage" class="section-copy">{{ statusMessage }}</p>
         <p v-if="scanError" class="form-error">{{ scanError }}</p>
 
-        <div v-if="duplicateTobacco" class="status-banner status-banner--error">
-          <strong>Этот код уже используется.</strong>
-          <p>
-            {{ duplicateTobacco.brand }} / {{ duplicateTobacco.line }} / {{ duplicateTobacco.flavorName }}
-          </p>
+        <div v-if="duplicateTobacco" class="status-banner">
+          <strong>Точный код уже известен системе.</strong>
+          <p>{{ duplicateTobacco.brand }} / {{ duplicateTobacco.line }} / {{ duplicateTobacco.flavorName }}</p>
+        </div>
+
+        <div v-else-if="matchedSkuByGtin" class="status-banner">
+          <strong>Найден знакомый товар по GTIN.</strong>
+          <p>{{ matchedSkuByGtin.brand }} / {{ matchedSkuByGtin.line }} / {{ matchedSkuByGtin.flavorName }}</p>
+          <p class="section-copy">{{ enrichmentSource }}</p>
         </div>
       </section>
 
@@ -375,7 +500,7 @@ onBeforeUnmount(() => {
         <div class="editor-card__header">
           <div>
             <p class="section-label">Catalog card</p>
-            <h3>Новая карточка табака</h3>
+            <h3>Подтверждение карточки</h3>
           </div>
         </div>
 
@@ -393,6 +518,11 @@ onBeforeUnmount(() => {
           <label class="field field--wide">
             <span>Вкус</span>
             <input v-model="draft.flavorName" class="input" type="text" list="scanner-flavor-suggestions" />
+          </label>
+
+          <label class="field">
+            <span>GTIN</span>
+            <input v-model="draft.markingGtin" class="input" type="text" readonly />
           </label>
 
           <label class="field">
@@ -433,7 +563,7 @@ onBeforeUnmount(() => {
 
         <div class="stack">
           <div>
-            <p class="section-label">Tags</p>
+            <p class="section-label">Теги</p>
             <div class="pill-row">
               <button
                 v-for="tag in activeTobaccoTags"
@@ -459,7 +589,7 @@ onBeforeUnmount(() => {
               :disabled="isSubmitting || Boolean(duplicateTobacco)"
               @click="submitTobacco"
             >
-              {{ isSubmitting ? 'Сохраняем...' : 'Добавить табак' }}
+              {{ isSubmitting ? 'Сохраняем...' : 'Подтвердить и добавить' }}
             </button>
           </div>
         </div>

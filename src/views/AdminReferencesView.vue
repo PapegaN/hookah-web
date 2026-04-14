@@ -45,6 +45,7 @@ const tobaccoFields: ReferenceFieldConfig[] = [
   { key: 'line', label: 'Р›РёРЅРµР№РєР°', kind: 'text' },
   { key: 'flavorName', label: 'Р’РєСѓСЃ', kind: 'text' },
   { key: 'markingCode', label: 'Честный знак', kind: 'text' },
+  { key: 'markingGtin', label: 'GTIN', kind: 'text' },
   { key: 'lineStrengthLevel', label: 'РљСЂРµРїРѕСЃС‚СЊ Р»РёРЅРµР№РєРё', kind: 'number', min: 1, max: 5 },
   { key: 'estimatedStrengthLevel', label: 'РћС†РµРЅРѕС‡РЅР°СЏ РєСЂРµРїРѕСЃС‚СЊ', kind: 'number', min: 1, max: 5 },
   { key: 'brightnessLevel', label: 'РЇСЂРєРѕСЃС‚СЊ', kind: 'number', min: 1, max: 5 },
@@ -114,6 +115,11 @@ const referenceTabs: ReferenceTabConfig[] = [
         key: 'markingCode',
         label: 'Честный знак',
         getValue: (item) => ('markingCode' in item ? item.markingCode ?? 'Не указан' : ''),
+      },
+      {
+        key: 'markingGtin',
+        label: 'GTIN',
+        getValue: (item) => ('markingGtin' in item ? item.markingGtin ?? 'Не указан' : ''),
       },
       {
         key: 'estimatedStrengthLevel',
