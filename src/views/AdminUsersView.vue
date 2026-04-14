@@ -26,25 +26,25 @@ const editingUserId = ref<string | null>(null)
 const modalDraft = reactive<UserDraft>(buildDraft())
 
 const roleOptions: Array<{ value: UserRole; label: string }> = [
-  { value: 'admin', label: 'РђРґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂ' },
-  { value: 'hookah_master', label: 'РљР°Р»СЊСЏРЅРЅС‹Р№ РјР°СЃС‚РµСЂ' },
-  { value: 'client', label: 'РљР»РёРµРЅС‚' },
+  { value: 'admin', label: 'Администратор' },
+  { value: 'hookah_master', label: 'Кальянный мастер' },
+  { value: 'client', label: 'Клиент' },
 ]
 
 const tabItems = computed(() => [
   {
     key: 'pending' as const,
-    label: 'РћР¶РёРґР°СЋС‚ Р°РїСЂСѓРІ',
+    label: 'Ожидают апрув',
     count: appDataStore.users.filter((user) => !user.isApproved).length,
   },
   {
     key: 'approved' as const,
-    label: 'РџРѕРґС‚РІРµСЂР¶РґС‘РЅРЅС‹Рµ',
+    label: 'Подтверждённые',
     count: appDataStore.users.filter((user) => user.isApproved).length,
   },
   {
     key: 'all' as const,
-    label: 'Р’СЃРµ',
+    label: 'Все',
     count: appDataStore.users.length,
   },
 ])
@@ -61,7 +61,7 @@ const filteredUsers = computed(() => {
 })
 
 const modalTitle = computed(() =>
-  editingUserId.value ? 'Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ' : 'Р”РѕР±Р°РІРёС‚СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ',
+  editingUserId.value ? 'Редактировать пользователя' : 'Добавить пользователя',
 )
 
 function buildDraft(user?: AppUser): UserDraft {
@@ -140,16 +140,16 @@ async function approveUser(user: AppUser) {
     <div class="panel__header">
       <div>
         <p class="section-label">Admin users</p>
-        <h2>РџРѕР»СЊР·РѕРІР°С‚РµР»Рё Рё РґРѕСЃС‚СѓРїС‹</h2>
+        <h2>Пользователи и доступы</h2>
       </div>
       <button class="button button--primary" type="button" @click="openCreateModal">
-        Р”РѕР±Р°РІРёС‚СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
+        Добавить пользователя
       </button>
     </div>
 
     <p class="section-copy">
-      Р РµРіРёСЃС‚СЂР°С†РёСЏ С‚РµРїРµСЂСЊ СЃРѕР·РґР°С‘С‚ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ Р±РµР· РґРѕСЃС‚СѓРїР°. РђРґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂ РјРѕР¶РµС‚ РїРѕРґС‚РІРµСЂРґРёС‚СЊ
-      Р°РєРєР°СѓРЅС‚, СЃРєРѕСЂСЂРµРєС‚РёСЂРѕРІР°С‚СЊ СЂРѕР»СЊ Рё РґРѕР±Р°РІРёС‚СЊ РЅРѕРІС‹С… РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ РІСЂСѓС‡РЅСѓСЋ РёР· СЌС‚РѕР№ С‚Р°Р±Р»РёС†С‹.
+      Регистрация теперь создаёт пользователя без доступа. Администратор может подтвердить
+      аккаунт, скорректировать роль и добавить новых пользователей вручную из этой таблицы.
     </p>
 
     <div class="tab-row">
@@ -171,12 +171,12 @@ async function approveUser(user: AppUser) {
       <table class="data-table">
         <thead>
           <tr>
-            <th scope="col">Р›РѕРіРёРЅ</th>
-            <th scope="col">Р РѕР»СЊ</th>
-            <th scope="col">РЎС‚Р°С‚СѓСЃ</th>
-            <th scope="col">РљРѕРЅС‚Р°РєС‚С‹</th>
-            <th scope="col">РђРїСЂСѓРІ</th>
-            <th scope="col">Р”РµР№СЃС‚РІРёСЏ</th>
+            <th scope="col">Логин</th>
+            <th scope="col">Роль</th>
+            <th scope="col">Статус</th>
+            <th scope="col">Контакты</th>
+            <th scope="col">Апрув</th>
+            <th scope="col">Действия</th>
           </tr>
         </thead>
 
@@ -189,21 +189,21 @@ async function approveUser(user: AppUser) {
             <td data-label="Роль">{{ roleOptions.find((option) => option.value === user.role)?.label ?? user.role }}</td>
             <td data-label="Статус">
               <span class="pill" :class="{ 'pill--muted': !user.isApproved }">
-                {{ user.isApproved ? 'РџРѕРґС‚РІРµСЂР¶РґС‘РЅ' : 'РћР¶РёРґР°РµС‚ Р°РїСЂСѓРІ' }}
+                {{ user.isApproved ? 'Подтверждён' : 'Ожидает апрув' }}
               </span>
             </td>
             <td data-label="Контакты">
-              <p>{{ user.email ?? 'Email РЅРµ СѓРєР°Р·Р°РЅ' }}</p>
-              <p>{{ user.telegramUsername ?? 'Telegram РЅРµ СѓРєР°Р·Р°РЅ' }}</p>
+              <p>{{ user.email ?? 'Email не указан' }}</p>
+              <p>{{ user.telegramUsername ?? 'Telegram не указан' }}</p>
             </td>
             <td data-label="Апрув">
               <p>{{ formatDateTime(user.approvedAt) }}</p>
-              <p v-if="user.approvedBy" class="section-copy">РџРѕРґС‚РІРµСЂРґРёР»: {{ user.approvedBy.login }}</p>
+              <p v-if="user.approvedBy" class="section-copy">Подтвердил: {{ user.approvedBy.login }}</p>
             </td>
             <td data-label="Действия">
               <div class="pill-row">
                 <button class="button button--ghost" type="button" @click="openEditModal(user)">
-                  РР·РјРµРЅРёС‚СЊ
+                  Изменить
                 </button>
                 <button
                   v-if="!user.isApproved"
@@ -211,7 +211,7 @@ async function approveUser(user: AppUser) {
                   type="button"
                   @click="approveUser(user)"
                 >
-                  РђРїСЂСѓРІРЅСѓС‚СЊ
+                  Апрувнуть
                 </button>
               </div>
             </td>
@@ -219,7 +219,7 @@ async function approveUser(user: AppUser) {
 
           <tr v-if="filteredUsers.length === 0">
             <td colspan="6" class="data-table__empty">
-              Р’ СЌС‚РѕР№ РІРєР»Р°РґРєРµ РїРѕРєР° РЅРµС‚ РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№.
+              В этой вкладке пока нет пользователей.
             </td>
           </tr>
         </tbody>
@@ -235,17 +235,17 @@ async function approveUser(user: AppUser) {
             <p class="section-label">User editor</p>
             <h3>{{ modalTitle }}</h3>
           </div>
-          <button class="button button--ghost" type="button" @click="closeModal">Р—Р°РєСЂС‹С‚СЊ</button>
+          <button class="button button--ghost" type="button" @click="closeModal">Закрыть</button>
         </div>
 
         <div class="editor-grid">
           <label class="field">
-            <span>Р›РѕРіРёРЅ</span>
+            <span>Логин</span>
             <input v-model="modalDraft.login" class="input" type="text" autocomplete="username" />
           </label>
 
           <label v-if="!editingUserId" class="field">
-            <span>РџР°СЂРѕР»СЊ</span>
+            <span>Пароль</span>
             <input
               v-model="modalDraft.password"
               class="input"
@@ -255,7 +255,7 @@ async function approveUser(user: AppUser) {
           </label>
 
           <label class="field">
-            <span>Р РѕР»СЊ</span>
+            <span>Роль</span>
             <select v-model="modalDraft.role" class="input">
               <option v-for="option in roleOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
@@ -274,15 +274,15 @@ async function approveUser(user: AppUser) {
           </label>
 
           <label class="field">
-            <span>Р”РѕСЃС‚СѓРї РѕС‚РєСЂС‹С‚</span>
+            <span>Доступ открыт</span>
             <input v-model="modalDraft.isApproved" class="toggle" type="checkbox" />
           </label>
         </div>
 
         <div class="modal-actions">
-          <button class="button button--ghost" type="button" @click="closeModal">РћС‚РјРµРЅР°</button>
+          <button class="button button--ghost" type="button" @click="closeModal">Отмена</button>
           <button class="button button--primary" type="button" @click="submitModal">
-            РЎРѕС…СЂР°РЅРёС‚СЊ
+            Сохранить
           </button>
         </div>
       </section>

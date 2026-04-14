@@ -31,7 +31,7 @@ const editingItemId = ref<string | null>(null)
 const modalDraft = reactive<FormState>({})
 
 const modalTitle = computed(() =>
-  editingItemId.value ? `Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ: ${props.title}` : `Р”РѕР±Р°РІРёС‚СЊ: ${props.title}`,
+  editingItemId.value ? `Редактировать: ${props.title}` : `Добавить: ${props.title}`,
 )
 
 const suggestionsByField = computed<Record<string, string[]>>(() =>
@@ -171,7 +171,7 @@ function getSuggestionListId(key: string) {
             <th v-for="column in columns" :key="column.key" scope="col">
               {{ column.label }}
             </th>
-            <th scope="col">Р”РµР№СЃС‚РІРёСЏ</th>
+            <th scope="col">Действия</th>
           </tr>
         </thead>
 
@@ -182,14 +182,14 @@ function getSuggestionListId(key: string) {
             </td>
             <td data-label="Действия">
               <button class="button button--ghost" type="button" @click="openEditModal(item)">
-                РР·РјРµРЅРёС‚СЊ
+                Изменить
               </button>
             </td>
           </tr>
 
           <tr v-if="items.length === 0">
             <td :colspan="columns.length + 1" class="data-table__empty">
-              РџРѕРєР° РІ СЌС‚РѕРј СЃРїСЂР°РІРѕС‡РЅРёРєРµ РЅРµС‚ Р·Р°РїРёСЃРµР№.
+              Пока в этом справочнике нет записей.
             </td>
           </tr>
         </tbody>
@@ -205,7 +205,7 @@ function getSuggestionListId(key: string) {
             <p class="section-label">Modal editor</p>
             <h3>{{ modalTitle }}</h3>
           </div>
-          <button class="button button--ghost" type="button" @click="closeModal">Р—Р°РєСЂС‹С‚СЊ</button>
+          <button class="button button--ghost" type="button" @click="closeModal">Закрыть</button>
         </div>
 
         <div class="editor-grid">
@@ -287,9 +287,9 @@ function getSuggestionListId(key: string) {
         </div>
 
         <div class="modal-actions">
-          <button class="button button--ghost" type="button" @click="closeModal">РћС‚РјРµРЅР°</button>
+          <button class="button button--ghost" type="button" @click="closeModal">Отмена</button>
           <button class="button button--primary" type="button" @click="submitModal">
-            РЎРѕС…СЂР°РЅРёС‚СЊ
+            Сохранить
           </button>
         </div>
       </section>

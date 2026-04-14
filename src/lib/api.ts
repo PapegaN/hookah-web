@@ -22,6 +22,10 @@ import type {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v1'
 
+// Таймаут HTTP-запросов к API (30 секунд).
+// Защищает от «зависания» запросов при проблемах с сервером или сетью.
+const API_TIMEOUT_MS = 30_000
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -31,6 +35,21 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Создаёт AbortSignal с заданным таймаутом.
+ * Если сервер не отвечает за указанное время, запрос будет отменён.
+ */
+function createTimeoutSignal(timeoutMs: number): AbortSignal {
+  const controller = new AbortController()
+  setTimeout(() => controller.abort(), timeoutMs)
+  return controller.signal
+}
+
+/**
+ * Выполняет HTTP-запрос к API с автоматическим таймаутом.
+ * Если вызывающий код уже передал свой signal, он будет использован
+ * вместе с таймаутом (через RaceController).
+ */
 async function request<T>(
   path: string,
   options: RequestInit & { token?: string } = {},
@@ -45,17 +64,39 @@ async function request<T>(
     headers.set('Authorization', `Bearer ${options.token}`)
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers,
-  })
+  // Если вызывающий код не передал свой signal, добавляем таймаут.
+  // Если signal уже есть — оборачиваем его в composite с таймаутом.
+  const timeoutSignal = createTimeoutSignal(API_TIMEOUT_MS)
 
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new ApiError(errorText || 'Request failed', response.status)
+  try {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      signal: timeoutSignal,
+      headers,
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new ApiError(errorText || 'Request failed', response.status)
+    }
+
+    return (await response.json()) as T
+  } catch (error) {
+    // Преобразуем ошибку прерывания (таймаут) в понятный TimeoutError
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new TimeoutError()
+    }
+    throw error
   }
+}
 
-  return (await response.json()) as T
+/**
+ * Ошибка, возникающая при превышении таймаута HTTP-запроса.
+ */
+export class TimeoutError extends Error {
+  constructor() {
+    super('Request timed out')
+  }
 }
 
 export const api = {

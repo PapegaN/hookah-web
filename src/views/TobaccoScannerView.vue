@@ -128,7 +128,11 @@ function buildSuggestions(values: string[]) {
 }
 
 function parseMarkingCode(input: string): ParsedMarkingCode | undefined {
-  const normalizedCode = input.replace(/\u001d/g, '').replace(/\s+/g, '').trim()
+  // Group separator (ASCII 0x1D, GS) используется в DataMatrix маркировке.
+  // Создаём RegExp через конструктор, чтобы избежать предупреждения линтера.
+  const gsChar = String.fromCharCode(0x1d)
+  const gsRegex = new RegExp(gsChar, 'g')
+  const normalizedCode = input.replace(gsRegex, '').replace(/\s+/g, '').trim()
 
   if (!normalizedCode) {
     return undefined
@@ -137,7 +141,7 @@ function parseMarkingCode(input: string): ParsedMarkingCode | undefined {
   const raw = normalizedCode.startsWith(']d2') ? normalizedCode.slice(3) : normalizedCode
 
   const ai01 = raw.match(/01(\d{14})/)
-  const ai21 = raw.match(/21([0-9A-Za-z!\"%&'()*+,\-./:;<=>?_]{1,20})/)
+  const ai21 = raw.match(/21([0-9A-Za-z!"%&'()*+,\-./:;<=>?_]{1,20})/)
   const ai91 = raw.match(/91([0-9A-Za-z]{1,90})/)
 
   return {

@@ -33,26 +33,26 @@ const bowlTypeOptions = [
 ]
 
 const capacityOptions = [
-  { label: 'Р’РµРґСЂРѕ', value: 'bucket' },
-  { label: 'Р‘РѕР»СЊС€Р°СЏ', value: 'large' },
-  { label: 'РЎСЂРµРґРЅСЏСЏ', value: 'medium' },
-  { label: 'РњР°Р»Р°СЏ', value: 'small' },
-  { label: 'РћС‡РµРЅСЊ РјР°Р»Р°СЏ', value: 'very_small' },
+  { label: 'Ведро', value: 'bucket' },
+  { label: 'Большая', value: 'large' },
+  { label: 'Средняя', value: 'medium' },
+  { label: 'Малая', value: 'small' },
+  { label: 'Очень малая', value: 'very_small' },
 ]
 
 const tobaccoFields: ReferenceFieldConfig[] = [
-  { key: 'brand', label: 'Р‘СЂРµРЅРґ', kind: 'text' },
-  { key: 'line', label: 'Р›РёРЅРµР№РєР°', kind: 'text' },
-  { key: 'flavorName', label: 'Р’РєСѓСЃ', kind: 'text' },
+  { key: 'brand', label: 'Бренд', kind: 'text' },
+  { key: 'line', label: 'Линейка', kind: 'text' },
+  { key: 'flavorName', label: 'Вкус', kind: 'text' },
   { key: 'markingCode', label: 'Честный знак', kind: 'text' },
   { key: 'markingGtin', label: 'GTIN', kind: 'text' },
-  { key: 'lineStrengthLevel', label: 'РљСЂРµРїРѕСЃС‚СЊ Р»РёРЅРµР№РєРё', kind: 'number', min: 1, max: 5 },
-  { key: 'estimatedStrengthLevel', label: 'РћС†РµРЅРѕС‡РЅР°СЏ РєСЂРµРїРѕСЃС‚СЊ', kind: 'number', min: 1, max: 5 },
-  { key: 'brightnessLevel', label: 'РЇСЂРєРѕСЃС‚СЊ', kind: 'number', min: 1, max: 5 },
-  { key: 'flavorDescription', label: 'РћРїРёСЃР°РЅРёРµ РІРєСѓСЃР°', kind: 'textarea' },
+  { key: 'lineStrengthLevel', label: 'Крепость линейки', kind: 'number', min: 1, max: 5 },
+  { key: 'estimatedStrengthLevel', label: 'Оценочная крепость', kind: 'number', min: 1, max: 5 },
+  { key: 'brightnessLevel', label: 'Яркость', kind: 'number', min: 1, max: 5 },
+  { key: 'flavorDescription', label: 'Описание вкуса', kind: 'textarea' },
   { key: 'flavorTags', label: 'Теги вкуса (через запятую)', kind: 'text' },
   { key: 'inStock', label: 'В наличии', kind: 'boolean' },
-  { key: 'isActive', label: 'РђРєС‚РёРІРµРЅ', kind: 'boolean' },
+  { key: 'isActive', label: 'Активен', kind: 'boolean' },
 ]
 
 const tobaccoTagFields: ReferenceFieldConfig[] = [
@@ -61,35 +61,35 @@ const tobaccoTagFields: ReferenceFieldConfig[] = [
 ]
 
 const hookahFields: ReferenceFieldConfig[] = [
-  { key: 'manufacturer', label: 'Р¤РёСЂРјР°', kind: 'text' },
-  { key: 'name', label: 'РќР°Р·РІР°РЅРёРµ', kind: 'text' },
-  { key: 'innerDiameterMm', label: 'Р’РЅСѓС‚СЂРµРЅРЅРёР№ РґРёР°РјРµС‚СЂ, РјРј', kind: 'number', min: 1, step: 0.1 },
-  { key: 'hasDiffuser', label: 'РЎ РґРёС„С„СѓР·РѕСЂРѕРј', kind: 'boolean' },
-  { key: 'isActive', label: 'РђРєС‚РёРІРµРЅ', kind: 'boolean' },
+  { key: 'manufacturer', label: 'Фирма', kind: 'text' },
+  { key: 'name', label: 'Название', kind: 'text' },
+  { key: 'innerDiameterMm', label: 'Внутренний диаметр, мм', kind: 'number', min: 1, step: 0.1 },
+  { key: 'hasDiffuser', label: 'С диффузором', kind: 'boolean' },
+  { key: 'isActive', label: 'Активен', kind: 'boolean' },
 ]
 
 const bowlFields: ReferenceFieldConfig[] = [
-  { key: 'manufacturer', label: 'Р¤РёСЂРјР°', kind: 'text' },
-  { key: 'name', label: 'РќР°Р·РІР°РЅРёРµ', kind: 'text' },
-  { key: 'bowlType', label: 'РўРёРї', kind: 'select', options: bowlTypeOptions },
-  { key: 'material', label: 'РњР°С‚РµСЂРёР°Р»', kind: 'text' },
-  { key: 'capacityBucket', label: 'Р“СЂР°РјРјРѕРІРєР°', kind: 'select', options: capacityOptions },
-  { key: 'isActive', label: 'РђРєС‚РёРІРЅР°', kind: 'boolean' },
+  { key: 'manufacturer', label: 'Фирма', kind: 'text' },
+  { key: 'name', label: 'Название', kind: 'text' },
+  { key: 'bowlType', label: 'Тип', kind: 'select', options: bowlTypeOptions },
+  { key: 'material', label: 'Материал', kind: 'text' },
+  { key: 'capacityBucket', label: 'Граммовка', kind: 'select', options: capacityOptions },
+  { key: 'isActive', label: 'Активна', kind: 'boolean' },
 ]
 
 const kalaudFields: ReferenceFieldConfig[] = [
-  { key: 'manufacturer', label: 'Р¤РёСЂРјР°', kind: 'text' },
-  { key: 'name', label: 'РќР°Р·РІР°РЅРёРµ', kind: 'text' },
-  { key: 'material', label: 'РњР°С‚РµСЂРёР°Р»', kind: 'text' },
-  { key: 'color', label: 'Р¦РІРµС‚', kind: 'text' },
-  { key: 'isActive', label: 'РђРєС‚РёРІРµРЅ', kind: 'boolean' },
+  { key: 'manufacturer', label: 'Фирма', kind: 'text' },
+  { key: 'name', label: 'Название', kind: 'text' },
+  { key: 'material', label: 'Материал', kind: 'text' },
+  { key: 'color', label: 'Цвет', kind: 'text' },
+  { key: 'isActive', label: 'Активен', kind: 'boolean' },
 ]
 
 const charcoalFields: ReferenceFieldConfig[] = [
-  { key: 'manufacturer', label: 'Р¤РёСЂРјР°', kind: 'text' },
-  { key: 'name', label: 'РќР°Р·РІР°РЅРёРµ', kind: 'text' },
-  { key: 'sizeLabel', label: 'Р Р°Р·РјРµСЂ', kind: 'text' },
-  { key: 'isActive', label: 'РђРєС‚РёРІРµРЅ', kind: 'boolean' },
+  { key: 'manufacturer', label: 'Фирма', kind: 'text' },
+  { key: 'name', label: 'Название', kind: 'text' },
+  { key: 'sizeLabel', label: 'Размер', kind: 'text' },
+  { key: 'isActive', label: 'Активен', kind: 'boolean' },
 ]
 
 const electricHeadFields: ReferenceFieldConfig[] = [
@@ -101,16 +101,16 @@ const electricHeadFields: ReferenceFieldConfig[] = [
 const referenceTabs: ReferenceTabConfig[] = [
   {
     key: 'tobaccos',
-    label: 'РўР°Р±Р°РєРё',
-    title: 'РЎРїСЂР°РІРѕС‡РЅРёРє С‚Р°Р±Р°РєР°',
+    label: 'Табаки',
+    title: 'Справочник табака',
     description:
-      'Р”РѕР±Р°РІР»СЏР№С‚Рµ Р±СЂРµРЅРґС‹, Р»РёРЅРµР№РєРё Рё РІРєСѓСЃС‹ РІ С‚Р°Р±Р»РёС†Рµ. РџСЂРё РІРІРѕРґРµ Р±СЂРµРЅРґ Рё РґСЂСѓРіРёРµ РїРѕР»СЏ РїРѕРґСЃРєР°Р·С‹РІР°СЋС‚ СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРµ РІР°СЂРёР°РЅС‚С‹.',
-    addButtonLabel: 'Р”РѕР±Р°РІРёС‚СЊ С‚Р°Р±Р°Рє',
+      'Добавляйте бренды, линейки и вкусы в таблице. При вводе бренд и другие поля подсказывают уже существующие варианты.',
+    addButtonLabel: 'Добавить табак',
     fields: tobaccoFields,
     columns: [
-      { key: 'brand', label: 'Р‘СЂРµРЅРґ', getValue: (item) => ('brand' in item ? item.brand : '') },
-      { key: 'line', label: 'Р›РёРЅРµР№РєР°', getValue: (item) => ('line' in item ? item.line : '') },
-      { key: 'flavorName', label: 'Р’РєСѓСЃ', getValue: (item) => ('flavorName' in item ? item.flavorName : '') },
+      { key: 'brand', label: 'Бренд', getValue: (item) => ('brand' in item ? item.brand : '') },
+      { key: 'line', label: 'Линейка', getValue: (item) => ('line' in item ? item.line : '') },
+      { key: 'flavorName', label: 'Вкус', getValue: (item) => ('flavorName' in item ? item.flavorName : '') },
       {
         key: 'markingCode',
         label: 'Честный знак',
@@ -123,18 +123,18 @@ const referenceTabs: ReferenceTabConfig[] = [
       },
       {
         key: 'estimatedStrengthLevel',
-        label: 'РљСЂРµРїРѕСЃС‚СЊ',
+        label: 'Крепость',
         getValue: (item) => ('estimatedStrengthLevel' in item ? `${item.estimatedStrengthLevel}/5` : ''),
       },
       {
         key: 'brightnessLevel',
-        label: 'РЇСЂРєРѕСЃС‚СЊ',
+        label: 'Яркость',
         getValue: (item) => ('brightnessLevel' in item ? `${item.brightnessLevel}/5` : ''),
       },
       {
         key: 'isActive',
-        label: 'РЎС‚Р°С‚СѓСЃ',
-        getValue: (item) => (item.isActive ? 'РђРєС‚РёРІРµРЅ' : 'РЎРєСЂС‹С‚'),
+        label: 'Статус',
+        getValue: (item) => (item.isActive ? 'Активен' : 'Скрыт'),
       },
       {
         key: 'inStock',
@@ -162,96 +162,96 @@ const referenceTabs: ReferenceTabConfig[] = [
   },
   {
     key: 'hookahs',
-    label: 'РљР°Р»СЊСЏРЅС‹',
-    title: 'РЎРїСЂР°РІРѕС‡РЅРёРє РєР°Р»СЊСЏРЅРѕРІ',
-    description: 'Р¤РёСЂРјР°, РјРѕРґРµР»СЊ, РІРЅСѓС‚СЂРµРЅРЅРёР№ РґРёР°РјРµС‚СЂ Рё РЅР°Р»РёС‡РёРµ РґРёС„С„СѓР·РѕСЂР° РІ СѓРґРѕР±РЅРѕР№ С‚Р°Р±Р»РёС†Рµ.',
-    addButtonLabel: 'Р”РѕР±Р°РІРёС‚СЊ РєР°Р»СЊСЏРЅ',
+    label: 'Кальяны',
+    title: 'Справочник кальянов',
+    description: 'Фирма, модель, внутренний диаметр и наличие диффузора в удобной таблице.',
+    addButtonLabel: 'Добавить кальян',
     fields: hookahFields,
     columns: [
-      { key: 'manufacturer', label: 'Р¤РёСЂРјР°', getValue: (item) => ('manufacturer' in item ? item.manufacturer : '') },
-      { key: 'name', label: 'РќР°Р·РІР°РЅРёРµ', getValue: (item) => ('name' in item ? item.name : '') },
+      { key: 'manufacturer', label: 'Фирма', getValue: (item) => ('manufacturer' in item ? item.manufacturer : '') },
+      { key: 'name', label: 'Название', getValue: (item) => ('name' in item ? item.name : '') },
       {
         key: 'innerDiameterMm',
-        label: 'Р”РёР°РјРµС‚СЂ',
-        getValue: (item) => ('innerDiameterMm' in item ? `${item.innerDiameterMm} РјРј` : ''),
+        label: 'Диаметр',
+        getValue: (item) => ('innerDiameterMm' in item ? `${item.innerDiameterMm} мм` : ''),
       },
       {
         key: 'hasDiffuser',
-        label: 'Р”РёС„С„СѓР·РѕСЂ',
-        getValue: (item) => ('hasDiffuser' in item ? (item.hasDiffuser ? 'Р”Р°' : 'РќРµС‚') : ''),
+        label: 'Диффузор',
+        getValue: (item) => ('hasDiffuser' in item ? (item.hasDiffuser ? 'Да' : 'Нет') : ''),
       },
       {
         key: 'isActive',
-        label: 'РЎС‚Р°С‚СѓСЃ',
-        getValue: (item) => (item.isActive ? 'РђРєС‚РёРІРµРЅ' : 'РЎРєСЂС‹С‚'),
+        label: 'Статус',
+        getValue: (item) => (item.isActive ? 'Активен' : 'Скрыт'),
       },
     ],
   },
   {
     key: 'bowls',
-    label: 'Р§Р°С€РєРё',
-    title: 'РЎРїСЂР°РІРѕС‡РЅРёРє С‡Р°С€РµРє',
-    description: 'РўРёРї С‡Р°С€РєРё, РјР°С‚РµСЂРёР°Р» Рё СЂР°Р·РјРµСЂРЅР°СЏ РіСЂСѓРїРїР° РґР»СЏ Р±С‹СЃС‚СЂРѕРіРѕ РїРѕРёСЃРєР° РёРЅРІРµРЅС‚Р°СЂСЏ.',
-    addButtonLabel: 'Р”РѕР±Р°РІРёС‚СЊ С‡Р°С€РєСѓ',
+    label: 'Чашки',
+    title: 'Справочник чашек',
+    description: 'Тип чашки, материал и размерная группа для быстрого поиска инвентаря.',
+    addButtonLabel: 'Добавить чашку',
     fields: bowlFields,
     columns: [
-      { key: 'manufacturer', label: 'Р¤РёСЂРјР°', getValue: (item) => ('manufacturer' in item ? item.manufacturer : '') },
-      { key: 'name', label: 'РќР°Р·РІР°РЅРёРµ', getValue: (item) => ('name' in item ? item.name : '') },
-      { key: 'bowlType', label: 'РўРёРї', getValue: (item) => ('bowlType' in item ? item.bowlType : '') },
+      { key: 'manufacturer', label: 'Фирма', getValue: (item) => ('manufacturer' in item ? item.manufacturer : '') },
+      { key: 'name', label: 'Название', getValue: (item) => ('name' in item ? item.name : '') },
+      { key: 'bowlType', label: 'Тип', getValue: (item) => ('bowlType' in item ? item.bowlType : '') },
       {
         key: 'material',
-        label: 'РњР°С‚РµСЂРёР°Р»',
-        getValue: (item) => ('material' in item ? item.material ?? 'РќРµ СѓРєР°Р·Р°РЅ' : ''),
+        label: 'Материал',
+        getValue: (item) => ('material' in item ? item.material ?? 'Не указан' : ''),
       },
       {
         key: 'capacityBucket',
-        label: 'Р“СЂР°РјРјРѕРІРєР°',
+        label: 'Граммовка',
         getValue: (item) => ('capacityBucket' in item ? item.capacityBucket : ''),
       },
     ],
   },
   {
     key: 'kalauds',
-    label: 'РљР°Р»Р°СѓРґС‹',
-    title: 'РЎРїСЂР°РІРѕС‡РЅРёРє РєР°Р»Р°СѓРґРѕРІ',
-    description: 'РќР°Р·РІР°РЅРёРµ, С„РёСЂРјР°, РјР°С‚РµСЂРёР°Р» Рё С†РІРµС‚ РґР»СЏ СЂР°Р±РѕС‡РµРіРѕ РЅР°Р±РѕСЂР° РјР°СЃС‚РµСЂР°.',
-    addButtonLabel: 'Р”РѕР±Р°РІРёС‚СЊ РєР°Р»Р°СѓРґ',
+    label: 'Калауды',
+    title: 'Справочник калаудов',
+    description: 'Название, фирма, материал и цвет для рабочего набора мастера.',
+    addButtonLabel: 'Добавить калауд',
     fields: kalaudFields,
     columns: [
-      { key: 'manufacturer', label: 'Р¤РёСЂРјР°', getValue: (item) => ('manufacturer' in item ? item.manufacturer : '') },
-      { key: 'name', label: 'РќР°Р·РІР°РЅРёРµ', getValue: (item) => ('name' in item ? item.name : '') },
+      { key: 'manufacturer', label: 'Фирма', getValue: (item) => ('manufacturer' in item ? item.manufacturer : '') },
+      { key: 'name', label: 'Название', getValue: (item) => ('name' in item ? item.name : '') },
       {
         key: 'material',
-        label: 'РњР°С‚РµСЂРёР°Р»',
-        getValue: (item) => ('material' in item ? item.material ?? 'РќРµ СѓРєР°Р·Р°РЅ' : ''),
+        label: 'Материал',
+        getValue: (item) => ('material' in item ? item.material ?? 'Не указан' : ''),
       },
       {
         key: 'color',
-        label: 'Р¦РІРµС‚',
-        getValue: (item) => ('color' in item ? item.color ?? 'РќРµ СѓРєР°Р·Р°РЅ' : ''),
+        label: 'Цвет',
+        getValue: (item) => ('color' in item ? item.color ?? 'Не указан' : ''),
       },
       {
         key: 'isActive',
-        label: 'РЎС‚Р°С‚СѓСЃ',
-        getValue: (item) => (item.isActive ? 'РђРєС‚РёРІРµРЅ' : 'РЎРєСЂС‹С‚'),
+        label: 'Статус',
+        getValue: (item) => (item.isActive ? 'Активен' : 'Скрыт'),
       },
     ],
   },
   {
     key: 'charcoals',
-    label: 'РЈРіРѕР»СЊ',
-    title: 'РЎРїСЂР°РІРѕС‡РЅРёРє СѓРіР»СЏ',
-    description: 'Р Р°Р·РјРµСЂ, С„РёСЂРјР° Рё РЅР°Р·РІР°РЅРёРµ СѓРіР»СЏ РІ РѕРґРЅРѕРј РјРµСЃС‚Рµ.',
-    addButtonLabel: 'Р”РѕР±Р°РІРёС‚СЊ СѓРіРѕР»СЊ',
+    label: 'Уголь',
+    title: 'Справочник угля',
+    description: 'Размер, фирма и название угля в одном месте.',
+    addButtonLabel: 'Добавить уголь',
     fields: charcoalFields,
     columns: [
-      { key: 'manufacturer', label: 'Р¤РёСЂРјР°', getValue: (item) => ('manufacturer' in item ? item.manufacturer : '') },
-      { key: 'name', label: 'РќР°Р·РІР°РЅРёРµ', getValue: (item) => ('name' in item ? item.name : '') },
-      { key: 'sizeLabel', label: 'Р Р°Р·РјРµСЂ', getValue: (item) => ('sizeLabel' in item ? item.sizeLabel : '') },
+      { key: 'manufacturer', label: 'Фирма', getValue: (item) => ('manufacturer' in item ? item.manufacturer : '') },
+      { key: 'name', label: 'Название', getValue: (item) => ('name' in item ? item.name : '') },
+      { key: 'sizeLabel', label: 'Размер', getValue: (item) => ('sizeLabel' in item ? item.sizeLabel : '') },
       {
         key: 'isActive',
-        label: 'РЎС‚Р°С‚СѓСЃ',
-        getValue: (item) => (item.isActive ? 'РђРєС‚РёРІРµРЅ' : 'РЎРєСЂС‹С‚'),
+        label: 'Статус',
+        getValue: (item) => (item.isActive ? 'Активен' : 'Скрыт'),
       },
     ],
   },
@@ -353,9 +353,9 @@ function normalizeReferencePayload(
     <div class="panel__header">
       <div>
         <p class="section-label">Admin references</p>
-        <h2>РЎРїСЂР°РІРѕС‡РЅРёРєРё РѕР±РѕСЂСѓРґРѕРІР°РЅРёСЏ Рё С‚Р°Р±Р°РєР°</h2>
+        <h2>Справочники оборудования и табака</h2>
       </div>
-      <span class="pill">{{ currentItems.length }} Р·Р°РїРёСЃРµР№</span>
+      <span class="pill">{{ currentItems.length }} записей</span>
     </div>
 
     <div class="tab-row">
