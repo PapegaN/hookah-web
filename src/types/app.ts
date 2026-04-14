@@ -29,6 +29,7 @@ export type ReferenceEntityType =
   | 'electric_heads'
 
 export type SettingsResource = ReferenceEntityType | 'users' | 'orders' | 'backup' | 'backup_audit'
+export type MediaUsageType = 'tobacco_gallery' | 'forum_post' | 'forum_comment'
 
 export interface TobaccoTagReference {
   id: string
@@ -330,6 +331,46 @@ export interface BackupAuditEvent {
   itemCount: number
   details: Record<string, unknown>
   createdAt: string
+}
+
+export interface MediaAsset {
+  id: string
+  ownerUserId?: string
+  usageType: MediaUsageType
+  status: 'draft' | 'uploaded' | 'failed' | 'deleted'
+  bucketName: string
+  objectKey: string
+  originalFileName: string
+  mimeType: string
+  byteSize: number
+  checksumSha256?: string
+  widthPx?: number
+  heightPx?: number
+  publicUrl?: string
+  uploadedAt?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateMediaUploadPayload {
+  fileName: string
+  mimeType: string
+  byteSize: number
+  usageType: MediaUsageType
+}
+
+export interface CreateMediaUploadResponse {
+  asset: MediaAsset
+  uploadUrl: string
+  uploadMethod: 'PUT'
+  uploadHeaders: Record<string, string>
+  expiresInSeconds: number
+}
+
+export interface CompleteMediaUploadPayload {
+  checksumSha256?: string
+  widthPx?: number
+  heightPx?: number
 }
 
 export type EditableReferenceItem =

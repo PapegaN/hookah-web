@@ -1,11 +1,15 @@
 import type {
   AppUser,
   AuthResponse,
+  CompleteMediaUploadPayload,
+  CreateMediaUploadPayload,
+  CreateMediaUploadResponse,
   CreateUserPayload,
   CreateOrderPayload,
   DemoAccountsResponse,
   FulfillOrderPayload,
   OrderView,
+  MediaAsset,
   ReferencesSnapshot,
   ReferenceEntityType,
   SettingsExportResponse,
@@ -196,6 +200,25 @@ export const api = {
       method: 'POST',
       token,
       body: JSON.stringify({ data }),
+    })
+  },
+  createMediaUpload(token: string, payload: CreateMediaUploadPayload) {
+    return request<CreateMediaUploadResponse>('/media/uploads/presign', {
+      method: 'POST',
+      token,
+      body: JSON.stringify(payload),
+    })
+  },
+  completeMediaUpload(token: string, assetId: string, payload: CompleteMediaUploadPayload) {
+    return request<MediaAsset>(`/media/assets/${assetId}/complete`, {
+      method: 'POST',
+      token,
+      body: JSON.stringify(payload),
+    })
+  },
+  getMediaAssets(token: string, limit = 20) {
+    return request<MediaAsset[]>(`/media/assets?limit=${limit}`, {
+      token,
     })
   },
 }
