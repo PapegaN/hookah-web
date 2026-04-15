@@ -17,10 +17,11 @@ const feedbackError = ref<string | null>(null)
 
 const latestOrder = computed(() => appDataStore.latestClientOrder)
 
-const currentParticipant = computed(() =>
-  latestOrder.value?.participants.find(
-    (participant) => participant.client.id === sessionStore.currentUser?.id,
-  ) ?? null,
+const currentParticipant = computed(
+  () =>
+    latestOrder.value?.participants.find(
+      (participant) => participant.client.id === sessionStore.currentUser?.id,
+    ) ?? null,
 )
 
 const canLeaveFeedback = computed(
@@ -65,8 +66,7 @@ async function submitFeedback() {
         <p class="section-label">{{ latestOrder.tableLabel }}</p>
         <h2>Статус вашего заказа</h2>
         <p class="section-copy">
-          Здесь видно запросы по столу, фактическую забивку мастера, подтверждение гостей и полную
-          историю статусов.
+          Здесь видны запросы по столу, фактическая забивка мастера, подтверждение гостей и полная история статусов.
         </p>
       </div>
 
@@ -97,9 +97,9 @@ async function submitFeedback() {
     </section>
 
     <section class="panel">
-      <div class="panel__header">
+      <div class="panel__header panel__header--compact-mobile">
         <div>
-          <p class="section-label">Guests</p>
+          <p class="section-label">Гости</p>
           <h3>Люди за столом и их запросы</h3>
         </div>
         <span class="pill">{{ latestOrder.participants.length }} гостей</span>
@@ -107,7 +107,7 @@ async function submitFeedback() {
 
       <div class="participant-list">
         <article v-for="participant in latestOrder.participants" :key="participant.client.id" class="participant-card">
-          <div class="editor-card__header">
+          <div class="editor-card__header editor-card__header--stack-mobile">
             <div>
               <p class="section-label">{{ participant.client.login }}</p>
               <h4>{{ formatDateTime(participant.joinedAt) }}</h4>
@@ -121,15 +121,21 @@ async function submitFeedback() {
             </span>
           </div>
 
-          <p>{{ participant.description }}</p>
+          <p class="section-copy">{{ participant.description }}</p>
+
+          <div class="pill-row">
+            <span v-if="participant.wantsCooling" class="pill pill--muted">С холодком</span>
+            <span v-if="participant.wantsMint" class="pill pill--muted">С мятой</span>
+            <span v-if="participant.wantsSpicy" class="pill pill--muted">Пряный</span>
+          </div>
 
           <div class="pill-row">
             <span
-              v-for="tobacco in participant.requestedTobaccos"
-              :key="`${participant.client.id}-${tobacco.id}`"
+              v-for="item in participant.requestedBlend"
+              :key="`${participant.client.id}-${item.tobacco.id}`"
               class="pill"
             >
-              {{ tobacco.brand }} / {{ tobacco.flavorName }}
+              {{ item.tobacco.brand }} / {{ item.tobacco.flavorName }} · {{ item.percentage }}%
             </span>
           </div>
 
@@ -147,17 +153,17 @@ async function submitFeedback() {
     </section>
 
     <section class="panel">
-      <div class="panel__header">
+      <div class="panel__header panel__header--compact-mobile">
         <div>
-          <p class="section-label">Actual packing</p>
-          <h3>Что забил мастер</h3>
+          <p class="section-label">Фактическая забивка</p>
+          <h3>Что сделал мастер</h3>
         </div>
         <span v-if="latestOrder.acceptedBy" class="pill">{{ latestOrder.acceptedBy.login }}</span>
       </div>
 
       <div class="pill-row">
-        <span v-for="tobacco in latestOrder.actualTobaccos" :key="tobacco.id" class="pill">
-          {{ tobacco.brand }} / {{ tobacco.flavorName }}
+        <span v-for="item in latestOrder.actualBlend" :key="item.tobacco.id" class="pill">
+          {{ item.tobacco.brand }} / {{ item.tobacco.flavorName }} · {{ item.percentage }}%
         </span>
       </div>
 
@@ -167,10 +173,10 @@ async function submitFeedback() {
     </section>
 
     <section class="panel">
-      <div class="panel__header">
+      <div class="panel__header panel__header--compact-mobile">
         <div>
-          <p class="section-label">Status timeline</p>
-          <h3>История статусов</h3>
+          <p class="section-label">История</p>
+          <h3>Лента статусов</h3>
         </div>
       </div>
 
@@ -186,9 +192,9 @@ async function submitFeedback() {
     </section>
 
     <section v-if="canLeaveFeedback" class="panel">
-      <div class="panel__header">
+      <div class="panel__header panel__header--compact-mobile">
         <div>
-          <p class="section-label">Feedback</p>
+          <p class="section-label">Отзыв</p>
           <h3>Оцените кальян</h3>
         </div>
       </div>
@@ -208,19 +214,19 @@ async function submitFeedback() {
           v-model="feedbackForm.ratingReview"
           class="input textarea"
           rows="4"
-          placeholder="Опишите, что понравилось в тяге, вкусе и балансе."
+          placeholder="Опишите, что понравилось во вкусе, тяге и балансе."
         />
       </label>
 
       <p v-if="feedbackError" class="form-error">{{ feedbackError }}</p>
 
-      <button class="button button--primary" type="button" @click="submitFeedback">
+      <button class="button button--primary button--full-width-mobile" type="button" @click="submitFeedback">
         Отправить отзыв
       </button>
     </section>
 
     <section v-else-if="currentParticipant?.feedback" class="panel">
-      <p class="section-label">Feedback</p>
+      <p class="section-label">Отзыв</p>
       <h3>Ваш отзыв уже сохранён</h3>
       <p class="section-copy">
         Оценка {{ currentParticipant.feedback.ratingScore }}/5 от
@@ -232,11 +238,11 @@ async function submitFeedback() {
     </section>
   </section>
 
-  <section v-else class="panel">
-    <p class="section-label">No orders yet</p>
-    <h2>Заказов пока нет</h2>
+  <section v-else class="panel empty-state">
+    <p class="section-label">Заказов пока нет</p>
+    <h2>Статус появится после первого заказа</h2>
     <p class="section-copy">
-      Как только вы отправите заказ, здесь появится его статус и история.
+      Как только вы отправите заказ, здесь появятся его статус и история.
     </p>
   </section>
 </template>

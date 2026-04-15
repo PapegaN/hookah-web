@@ -134,10 +134,14 @@ watch(
       return
     }
 
+    let isRefreshing = false
+
     const refresh = async () => {
-      if (!sessionStore.currentUser) {
+      if (!sessionStore.currentUser || isRefreshing) {
         return
       }
+
+      isRefreshing = true
 
       try {
         await appDataStore.refreshOrders(accessToken, sessionStore.currentUser, {
@@ -145,12 +149,16 @@ watch(
         })
       } catch {
         return
+      } finally {
+        isRefreshing = false
       }
     }
 
+    void refresh()
+
     const intervalId = window.setInterval(() => {
       void refresh()
-    }, 12000)
+    }, 10000)
 
     onCleanup(() => {
       window.clearInterval(intervalId)
@@ -197,6 +205,14 @@ async function handleLogout() {
 }
 
 async function openNotification(orderId: string, notificationId: string) {
+  if (sessionStore.accessToken) {
+    try {
+      await appDataStore.refreshOrder(sessionStore.accessToken, orderId)
+    } catch {
+      // Даже если заказ временно не удалось обновить, всё равно даём перейти в карточку.
+    }
+  }
+
   appDataStore.dismissNotification(notificationId)
   await router.push(`/staff/orders/${orderId}`)
 }
@@ -267,7 +283,11 @@ async function openNotification(orderId: string, notificationId: string) {
         </div>
       </div>
 
-      <nav v-if="navigationItems.length > 0" class="navigation navigation--desktop" aria-label="Основная навигация">
+      <nav
+        v-if="navigationItems.length > 0"
+        class="navigation navigation--desktop"
+        aria-label="Основная навигация"
+      >
         <RouterLink v-for="item in navigationItems" :key="item.to" :to="item.to" class="navigation__link">
           {{ item.name }}
         </RouterLink>
@@ -323,7 +343,7 @@ async function openNotification(orderId: string, notificationId: string) {
       </section>
 
       <section v-if="isLoadingSession" class="panel status-banner">
-        <p class="section-label">Sync</p>
+        <p class="section-label">Синхронизация</p>
         <h2>Загружаем роли, справочники и очередь заказов</h2>
         <p class="section-copy">
           После синхронизации откроется рабочая зона для вашей роли.

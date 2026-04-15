@@ -4,8 +4,8 @@ import { defineStore } from 'pinia'
 import { ApiError, api } from '@/lib/api'
 import type {
   AppUser,
-  CreateUserPayload,
   CreateOrderPayload,
+  CreateUserPayload,
   FulfillOrderPayload,
   OrderNotification,
   OrderView,
@@ -64,7 +64,7 @@ export const useAppDataStore = defineStore('app-data', () => {
       errorMessage.value =
         error instanceof ApiError
           ? 'Не удалось загрузить данные панели.'
-          : 'Ошибка загрузки'
+          : 'Ошибка загрузки.'
       throw error
     } finally {
       isBootstrapping.value = false
@@ -126,6 +126,12 @@ export const useAppDataStore = defineStore('app-data', () => {
   async function createOrder(token: string, payload: CreateOrderPayload) {
     const createdOrder = await api.createOrder(token, payload)
     replaceOrder(createdOrder)
+  }
+
+  async function refreshOrder(token: string, orderId: string) {
+    const nextOrder = await api.getOrder(token, orderId)
+    replaceOrder(nextOrder)
+    return nextOrder
   }
 
   async function startOrder(token: string, orderId: string) {
@@ -213,6 +219,7 @@ export const useAppDataStore = defineStore('app-data', () => {
     createReference,
     updateReference,
     createOrder,
+    refreshOrder,
     approveParticipantTable,
     startOrder,
     fulfillOrder,
@@ -276,7 +283,7 @@ function buildNotifications(
           id: `${order.id}:${createdAt}:participant`,
           orderId: order.id,
           tableLabel: order.tableLabel,
-          title: 'Новый гость у стола',
+          title: 'Новый гость за столом',
           message: `${order.tableLabel}: к заказу присоединился ещё один клиент.`,
           createdAt,
         },

@@ -11,6 +11,13 @@ const router = useRouter()
 const appDataStore = useAppDataStore()
 const activeTab = ref<StaffOrderTab>('new')
 
+const statusLabels = {
+  new: 'Новый',
+  in_progress: 'В работе',
+  ready_for_feedback: 'Ждёт отзыв',
+  rated: 'Завершён',
+}
+
 const tabItems = computed(() => [
   {
     key: 'new' as const,
@@ -53,20 +60,19 @@ function openOrder(orderId: string) {
 
 <template>
   <section class="panel">
-    <div class="panel__header">
+    <div class="panel__header panel__header--compact-mobile">
       <div>
-        <p class="section-label">Staff board</p>
+        <p class="section-label">Заказы</p>
         <h2>Рабочая доска заказов</h2>
       </div>
       <span class="pill">{{ appDataStore.orders.length }} заказов в системе</span>
     </div>
 
     <p class="section-copy">
-      Доска разбита по статусам. Новые заказы ждут реакции команды, текущие показывают активную
-      работу и сбор отзывов, завершённые помогают быстро вернуться к истории по столу.
+      Все заказы разбиты по стадиям. На телефоне карточки адаптированы под быстрый просмотр и открытие заказа одним нажатием.
     </p>
 
-    <div class="tab-row">
+    <div class="tab-row tab-row--scrollable">
       <button
         v-for="tab in tabItems"
         :key="tab.key"
@@ -80,28 +86,37 @@ function openOrder(orderId: string) {
     </div>
   </section>
 
-  <div v-if="visibleOrders.length > 0" class="task-list">
-    <article v-for="order in visibleOrders" :key="order.id" class="task-card">
-      <div class="editor-card__header">
+  <div v-if="visibleOrders.length > 0" class="task-list task-list--mobile-cards">
+    <article
+      v-for="order in visibleOrders"
+      :key="order.id"
+      class="task-card task-card--interactive"
+      @click="openOrder(order.id)"
+    >
+      <div class="editor-card__header editor-card__header--stack-mobile">
         <div>
           <p class="section-label">{{ order.tableLabel }}</p>
           <h3>{{ order.participants.length }} гостей за столом</h3>
         </div>
-        <span class="pill">{{ order.status }}</span>
+        <span class="pill">{{ statusLabels[order.status] }}</span>
       </div>
 
-      <p class="section-copy">
-        Создан: {{ formatDateTime(order.createdAt) }}.
-        <template v-if="order.deliveredAt">
-          Отдан: {{ formatDateTime(order.deliveredAt) }}.
-        </template>
-      </p>
+      <div class="order-meta-grid">
+        <div class="order-meta-grid__item">
+          <span class="section-label">Создан</span>
+          <strong>{{ formatDateTime(order.createdAt) }}</strong>
+        </div>
+        <div class="order-meta-grid__item">
+          <span class="section-label">Отдан</span>
+          <strong>{{ formatDateTime(order.deliveredAt) }}</strong>
+        </div>
+      </div>
 
       <div class="pill-row">
-        <span class="pill">Запросов: {{ order.requestedTobaccos.length }}</span>
+        <span class="pill">Запросов: {{ order.requestedBlend.length }}</span>
         <span class="pill">Отзывов: {{ order.feedbacks.length }}</span>
         <span class="pill">
-          Подтверждено гостей:
+          За столом подтверждены:
           {{ order.participants.filter((participant) => participant.tableApprovalStatus === 'approved').length }}
         </span>
       </div>
@@ -110,14 +125,14 @@ function openOrder(orderId: string) {
         {{ order.participants.map((participant) => participant.client.login).join(', ') }}
       </p>
 
-      <button class="button button--primary" type="button" @click="openOrder(order.id)">
+      <button class="button button--primary button--full-width-mobile" type="button" @click.stop="openOrder(order.id)">
         Открыть заказ
       </button>
     </article>
   </div>
 
-  <section v-else class="panel">
-    <p class="section-label">Empty state</p>
+  <section v-else class="panel empty-state">
+    <p class="section-label">Пусто</p>
     <h3>В этой вкладке пока нет заказов</h3>
     <p class="section-copy">
       Как только появится заказ с выбранным статусом, он сразу окажется здесь.

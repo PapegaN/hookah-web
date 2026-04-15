@@ -137,12 +137,12 @@ async function approveUser(user: AppUser) {
 
 <template>
   <section class="panel">
-    <div class="panel__header">
+    <div class="panel__header panel__header--compact-mobile">
       <div>
         <p class="section-label">Admin users</p>
         <h2>Пользователи и доступы</h2>
       </div>
-      <button class="button button--primary" type="button" @click="openCreateModal">
+      <button class="button button--primary button--full-width-mobile" type="button" @click="openCreateModal">
         Добавить пользователя
       </button>
     </div>
@@ -152,7 +152,7 @@ async function approveUser(user: AppUser) {
       аккаунт, скорректировать роль и добавить новых пользователей вручную из этой таблицы.
     </p>
 
-    <div class="tab-row">
+    <div class="tab-row tab-row--scrollable">
       <button
         v-for="tab in tabItems"
         :key="tab.key"
@@ -230,7 +230,7 @@ async function approveUser(user: AppUser) {
   <Teleport to="body">
     <div v-if="isModalOpen" class="modal-overlay" @click.self="closeModal">
       <section class="modal-card">
-        <div class="panel__header">
+        <div class="panel__header panel__header--compact-mobile">
           <div>
             <p class="section-label">User editor</p>
             <h3>{{ modalTitle }}</h3>

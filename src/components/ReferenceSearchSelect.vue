@@ -19,6 +19,10 @@ const emit = defineEmits<{
 const selectedLabel = computed(
   () => props.options.find((option) => option.id === props.modelValue)?.title ?? '',
 )
+
+const inputId = computed(() =>
+  `reference-search-${props.label.toLowerCase().replace(/\s+/g, '-')}`,
+)
 </script>
 
 <template>
@@ -26,7 +30,7 @@ const selectedLabel = computed(
     <span>{{ label }}</span>
     <input
       class="input"
-      :list="`${label}-options`"
+      :list="`${inputId}-options`"
       :placeholder="placeholder ?? 'Начните вводить название...'"
       :value="selectedLabel"
       type="text"
@@ -38,7 +42,7 @@ const selectedLabel = computed(
         )
       "
     />
-    <datalist :id="`${label}-options`">
+    <datalist :id="`${inputId}-options`">
       <option v-for="option in options" :key="option.id" :value="option.title">
         {{ option.subtitle }}
       </option>

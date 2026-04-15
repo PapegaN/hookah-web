@@ -350,7 +350,7 @@ function normalizeReferencePayload(
 
 <template>
   <section class="panel">
-    <div class="panel__header">
+    <div class="panel__header panel__header--compact-mobile">
       <div>
         <p class="section-label">Admin references</p>
         <h2>Справочники оборудования и табака</h2>
@@ -358,7 +358,7 @@ function normalizeReferencePayload(
       <span class="pill">{{ currentItems.length }} записей</span>
     </div>
 
-    <div class="tab-row">
+    <div class="tab-row tab-row--scrollable">
       <button
         v-for="tab in referenceTabs"
         :key="tab.key"

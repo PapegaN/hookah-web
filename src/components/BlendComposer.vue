@@ -71,12 +71,12 @@ function rebalance(items: BlendComponentInput[]) {
 
 <template>
   <section class="panel panel--tight">
-    <div class="panel__header">
+    <div class="panel__header panel__header--compact-mobile">
       <div>
-        <p class="section-label">Blend</p>
+        <p class="section-label">Микс</p>
         <h3>{{ title }}</h3>
       </div>
-      <p class="section-copy">{{ description }}</p>
+      <p class="section-copy panel__aside-copy">{{ description }}</p>
     </div>
 
     <div class="filters-grid">
@@ -108,7 +108,12 @@ function rebalance(items: BlendComponentInput[]) {
 
       <label class="field field--wide">
         <span>Поиск</span>
-        <input v-model="filters.search" class="input" type="text" placeholder="Например: mint, pear, mango" />
+        <input
+          v-model="filters.search"
+          class="input"
+          type="text"
+          placeholder="Например: mint, pear, mango"
+        />
       </label>
     </div>
 
@@ -127,7 +132,7 @@ function rebalance(items: BlendComponentInput[]) {
           </div>
 
           <button
-            class="button button--secondary"
+            class="button button--secondary button--full-width-mobile"
             type="button"
             :disabled="selectedIds.includes(tobacco.id) || selectedIds.length >= 3"
             @click="addTobacco(tobacco.id)"
@@ -172,13 +177,15 @@ function rebalance(items: BlendComponentInput[]) {
               />
             </label>
 
-            <button class="button button--ghost" type="button" @click="removeTobacco(item.tobaccoId)">
+            <button class="button button--ghost button--full-width-mobile" type="button" @click="removeTobacco(item.tobaccoId)">
               Удалить
             </button>
           </article>
         </div>
 
-        <p v-else class="section-copy">Добавьте до трёх вкусов и настройте процентное соотношение.</p>
+        <p v-else class="section-copy">
+          Добавьте до трёх вкусов и настройте процентное соотношение.
+        </p>
       </aside>
     </div>
   </section>

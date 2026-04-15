@@ -152,12 +152,12 @@ function getSuggestionListId(key: string) {
 
 <template>
   <section class="panel">
-    <div class="panel__header">
+    <div class="panel__header panel__header--compact-mobile">
       <div>
         <p class="section-label">Reference table</p>
         <h2>{{ title }}</h2>
       </div>
-      <button class="button button--primary" type="button" @click="openCreateModal">
+      <button class="button button--primary button--full-width-mobile" type="button" @click="openCreateModal">
         {{ addButtonLabel }}
       </button>
     </div>
@@ -200,7 +200,7 @@ function getSuggestionListId(key: string) {
   <Teleport to="body">
     <div v-if="isModalOpen" class="modal-overlay" @click.self="closeModal">
       <section class="modal-card">
-        <div class="panel__header">
+        <div class="panel__header panel__header--compact-mobile">
           <div>
             <p class="section-label">Modal editor</p>
             <h3>{{ modalTitle }}</h3>

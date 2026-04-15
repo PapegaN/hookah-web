@@ -6,18 +6,18 @@ import BlendComposer from '@/components/BlendComposer.vue'
 import ReferenceSearchSelect from '@/components/ReferenceSearchSelect.vue'
 import { useAppDataStore } from '@/stores/app-data'
 import { useSessionStore } from '@/stores/session'
-import type { CreateOrderPayload } from '@/types/app'
+import type { CreateOrderPayload, PackingStyle } from '@/types/app'
 
 const router = useRouter()
 const sessionStore = useSessionStore()
 const appDataStore = useAppDataStore()
 
 const tableOptions = Array.from({ length: 8 }, (_, index) => `Стол ${index + 1}`)
-const packingOptions = [
+const packingOptions: Array<{ label: string; value: PackingStyle }> = [
   { label: 'Слоями', value: 'layers' },
   { label: 'Секторами', value: 'sectors' },
   { label: 'Компот', value: 'kompot' },
-  { label: 'Необычный', value: 'custom' },
+  { label: 'Необычный вариант', value: 'custom' },
 ]
 
 const form = reactive<CreateOrderPayload>({
@@ -37,7 +37,7 @@ const form = reactive<CreateOrderPayload>({
     charcoalId: '',
     electricHeadId: '',
     charcoalCount: 3,
-    warmupMode: 'with_cap' as const,
+    warmupMode: 'with_cap',
     warmupDurationMinutes: 6,
   },
 })
@@ -104,6 +104,9 @@ async function submitOrder() {
     tableLabel: form.tableLabel,
     description: form.description,
     requestedBlend: form.requestedBlend,
+    wantsCooling: form.wantsCooling,
+    wantsMint: form.wantsMint,
+    wantsSpicy: form.wantsSpicy,
     requestedSetup: {
       ...form.requestedSetup,
       customPackingStyle:
@@ -111,9 +114,18 @@ async function submitOrder() {
           ? form.requestedSetup.customPackingStyle
           : undefined,
       hookahId: form.requestedSetup.hookahId || undefined,
-      bowlId: form.requestedSetup.heatingSystemType === 'coal' ? form.requestedSetup.bowlId || undefined : undefined,
-      kalaudId: form.requestedSetup.heatingSystemType === 'coal' ? form.requestedSetup.kalaudId || undefined : undefined,
-      charcoalId: form.requestedSetup.heatingSystemType === 'coal' ? form.requestedSetup.charcoalId || undefined : undefined,
+      bowlId:
+        form.requestedSetup.heatingSystemType === 'coal'
+          ? form.requestedSetup.bowlId || undefined
+          : undefined,
+      kalaudId:
+        form.requestedSetup.heatingSystemType === 'coal'
+          ? form.requestedSetup.kalaudId || undefined
+          : undefined,
+      charcoalId:
+        form.requestedSetup.heatingSystemType === 'coal'
+          ? form.requestedSetup.charcoalId || undefined
+          : undefined,
       electricHeadId:
         form.requestedSetup.heatingSystemType === 'electric'
           ? form.requestedSetup.electricHeadId || undefined
@@ -127,12 +139,12 @@ async function submitOrder() {
 
 <template>
   <section class="panel stack">
-    <div class="panel__header">
+    <div class="panel__header panel__header--compact-mobile">
       <div>
-        <p class="section-label">Client order</p>
+        <p class="section-label">Заказ клиента</p>
         <h2>Соберите заказ на кальян</h2>
       </div>
-      <p class="section-copy">
+      <p class="section-copy panel__aside-copy">
         Выберите стол, опишите пожелания, соберите микс и укажите желаемую конфигурацию.
       </p>
     </div>
@@ -156,7 +168,12 @@ async function submitOrder() {
 
     <label class="field">
       <span>Описание заказа</span>
-      <textarea v-model="form.description" class="input textarea" rows="4" placeholder="Например: мягкий ягодный микс с холодком и лёгкой сладостью." />
+      <textarea
+        v-model="form.description"
+        class="input textarea"
+        rows="4"
+        placeholder="Например: мягкий ягодный микс с холодком и лёгкой сладостью."
+      />
     </label>
 
     <div class="editor-grid">
@@ -177,20 +194,25 @@ async function submitOrder() {
     <BlendComposer
       v-model="form.requestedBlend"
       title="Палитра вкусов"
-      description="Выберите до трёх табаков и задайте процентное соотношение."
+      description="Выберите до трёх табаков, задайте процентовку и сразу проверьте итоговую сумму микса."
       :tobaccos="appDataStore.references.tobaccos"
     />
 
     <section class="panel panel--tight">
-      <div class="panel__header">
+      <div class="panel__header panel__header--compact-mobile">
         <div>
-          <p class="section-label">Setup</p>
+          <p class="section-label">Сетап</p>
           <h3>Желаемая конфигурация</h3>
         </div>
       </div>
 
       <div class="editor-grid">
-        <ReferenceSearchSelect v-model="form.requestedSetup.hookahId" label="Кальян" :options="hookahOptions" />
+        <ReferenceSearchSelect
+          v-model="form.requestedSetup.hookahId"
+          label="Кальян"
+          placeholder="Найдите модель кальяна"
+          :options="hookahOptions"
+        />
 
         <label class="field">
           <span>Вариант забивки</span>
@@ -204,13 +226,33 @@ async function submitOrder() {
 
       <label v-if="form.requestedSetup.packingStyle === 'custom'" class="field">
         <span>Описание необычной забивки</span>
-        <input v-model="form.requestedSetup.customPackingStyle" class="input" type="text" placeholder="Например: диагональный градиент с акцентом на верхнем слое" />
+        <input
+          v-model="form.requestedSetup.customPackingStyle"
+          class="input"
+          type="text"
+          placeholder="Например: диагональный градиент с акцентом на верхнем слое"
+        />
       </label>
 
       <div v-if="form.requestedSetup.heatingSystemType === 'coal'" class="editor-grid">
-        <ReferenceSearchSelect v-model="form.requestedSetup.bowlId" label="Чашка" :options="bowlOptions" />
-        <ReferenceSearchSelect v-model="form.requestedSetup.kalaudId" label="Калауд" :options="kalaudOptions" />
-        <ReferenceSearchSelect v-model="form.requestedSetup.charcoalId" label="Уголь" :options="charcoalOptions" />
+        <ReferenceSearchSelect
+          v-model="form.requestedSetup.bowlId"
+          label="Чашка"
+          placeholder="Найдите чашку"
+          :options="bowlOptions"
+        />
+        <ReferenceSearchSelect
+          v-model="form.requestedSetup.kalaudId"
+          label="Калауд"
+          placeholder="Найдите калауд"
+          :options="kalaudOptions"
+        />
+        <ReferenceSearchSelect
+          v-model="form.requestedSetup.charcoalId"
+          label="Уголь"
+          placeholder="Найдите уголь"
+          :options="charcoalOptions"
+        />
 
         <label class="field">
           <span>Количество углей</span>
@@ -232,13 +274,18 @@ async function submitOrder() {
       </div>
 
       <div v-else class="editor-grid">
-        <ReferenceSearchSelect v-model="form.requestedSetup.electricHeadId" label="Электрическая чаша" :options="electricHeadOptions" />
+        <ReferenceSearchSelect
+          v-model="form.requestedSetup.electricHeadId"
+          label="Электрическая чаша"
+          placeholder="Найдите Hookah Pro"
+          :options="electricHeadOptions"
+        />
       </div>
     </section>
 
     <p v-if="submitError" class="form-error">{{ submitError }}</p>
 
-    <button class="button button--primary" type="button" @click="submitOrder">
+    <button class="button button--primary button--full-width-mobile" type="button" @click="submitOrder">
       Отправить заказ
     </button>
   </section>
