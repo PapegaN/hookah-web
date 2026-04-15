@@ -18,6 +18,21 @@ const statusLabels = {
   rated: 'Завершён',
 }
 
+function getOrderActionLabel(status: keyof typeof statusLabels) {
+  switch (status) {
+    case 'new':
+      return 'Принять заказ'
+    case 'in_progress':
+      return 'Заполнить фактическую забивку'
+    case 'ready_for_feedback':
+      return 'Открыть статус и отзывы'
+    case 'rated':
+      return 'Открыть историю заказа'
+    default:
+      return 'Открыть заказ'
+  }
+}
+
 const tabItems = computed(() => [
   {
     key: 'new' as const,
@@ -125,8 +140,12 @@ function openOrder(orderId: string) {
         {{ order.participants.map((participant) => participant.client.login).join(', ') }}
       </p>
 
+      <p class="section-copy">
+        Следующий шаг: {{ getOrderActionLabel(order.status) }}
+      </p>
+
       <button class="button button--primary button--full-width-mobile" type="button" @click.stop="openOrder(order.id)">
-        Открыть заказ
+        {{ getOrderActionLabel(order.status) }}
       </button>
     </article>
   </div>

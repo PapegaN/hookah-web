@@ -30,6 +30,13 @@ const timelineLabels = {
   feedback_received: 'Получен отзыв',
 }
 
+const orderStatusLabels = {
+  new: 'Новый',
+  in_progress: 'В работе',
+  ready_for_feedback: 'Ожидает отзыв',
+  rated: 'Завершён',
+}
+
 const draft = reactive<FulfillOrderPayload>({
   actualBlend: [],
   actualSetup: {
@@ -81,6 +88,59 @@ const electricHeadOptions = computed(() =>
     title: `${item.manufacturer} ${item.name}`,
   })),
 )
+
+const approvedParticipantsCount = computed(
+  () =>
+    order.value?.participants.filter(
+      (participant) => participant.tableApprovalStatus === 'approved',
+    ).length ?? 0,
+)
+
+const pendingParticipantsCount = computed(
+  () => (order.value?.participants.length ?? 0) - approvedParticipantsCount.value,
+)
+
+const nextActionTitle = computed(() => {
+  if (!order.value) {
+    return ''
+  }
+
+  if (order.value.status === 'new') {
+    return 'Принять заказ в работу'
+  }
+
+  if (order.value.status === 'in_progress') {
+    return 'Зафиксировать фактическую забивку и отдать заказ'
+  }
+
+  if (order.value.status === 'ready_for_feedback') {
+    return 'Заказ отдан, ждём оценки гостей'
+  }
+
+  return 'Заказ завершён'
+})
+
+const nextActionDescription = computed(() => {
+  if (!order.value) {
+    return ''
+  }
+
+  if (order.value.status === 'new') {
+    return pendingParticipantsCount.value > 0
+      ? `Перед стартом осталось подтвердить гостей: ${pendingParticipantsCount.value}.`
+      : 'Можно сразу взять заказ в работу.'
+  }
+
+  if (order.value.status === 'in_progress') {
+    return 'Соберите фактический микс, заполните комментарий мастера и отправьте заказ гостям.'
+  }
+
+  if (order.value.status === 'ready_for_feedback') {
+    return 'Карточка теперь работает как статус-экран. Следите за отзывами гостей и итоговой оценкой.'
+  }
+
+  return 'Все отзывы собраны, заказ можно использовать как историю по столу.'
+})
 
 watchEffect(() => {
   if (!order.value) {
@@ -183,12 +243,37 @@ async function fulfillOrder() {
           <h2>Карточка заказа</h2>
         </div>
         <div class="pill-row pill-row--stretch-mobile">
-          <span class="pill">{{ order.status }}</span>
+          <span class="pill">{{ orderStatusLabels[order.status] }}</span>
           <button class="button button--ghost button--full-width-mobile" type="button" @click="goBack">
             К списку
           </button>
         </div>
       </div>
+
+      <article class="task-card task-card--accent">
+        <div class="editor-card__header editor-card__header--stack-mobile">
+          <div>
+            <p class="task-card__status">Следующий шаг</p>
+            <h3>{{ nextActionTitle }}</h3>
+          </div>
+          <div class="pill-row">
+            <span class="pill">Подтверждено гостей: {{ approvedParticipantsCount }}</span>
+            <span class="pill pill--muted">Ожидают: {{ pendingParticipantsCount }}</span>
+          </div>
+        </div>
+
+        <p class="section-copy">{{ nextActionDescription }}</p>
+
+        <div v-if="order.status === 'new'" class="modal-actions">
+          <button
+            class="button button--secondary button--full-width-mobile"
+            type="button"
+            @click="takeOrder"
+          >
+            Взять заказ в работу
+          </button>
+        </div>
+      </article>
 
       <div class="stats-grid">
         <article class="task-card">
@@ -332,21 +417,13 @@ async function fulfillOrder() {
 
       <p v-if="order.packingComment" class="section-copy">Комментарий мастера: {{ order.packingComment }}</p>
 
-      <button
-        v-if="order.status === 'new'"
-        class="button button--secondary button--full-width-mobile"
-        type="button"
-        @click="takeOrder"
-      >
-        Взять в работу
-      </button>
-
       <div v-if="order.status === 'new' || order.status === 'in_progress'" class="stack">
         <BlendComposer
           v-model="draft.actualBlend"
           title="Фактический микс"
-          description="Укажите, что реально ушло в чашу и в каком соотношении."
+          description="Мастер может собрать до 10 табаков. Это удобно для сложных авторских миксов и точной передачи фактической забивки."
           :tobaccos="appDataStore.references.tobaccos"
+          :max-selections="10"
         />
 
         <div class="editor-grid">

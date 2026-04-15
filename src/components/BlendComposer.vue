@@ -9,6 +9,7 @@ const props = defineProps<{
   tobaccos: TobaccoReference[]
   title: string
   description: string
+  maxSelections?: number
 }>()
 
 const emit = defineEmits<{
@@ -22,6 +23,8 @@ const filters = reactive({
   search: '',
 })
 
+const maxSelections = computed(() => props.maxSelections ?? 3)
+
 const selectedIds = computed(() => props.modelValue.map((item) => item.tobaccoId))
 const brandOptions = computed(() => [...new Set(props.tobaccos.map((item) => item.brand))].sort())
 const tagOptions = computed(() =>
@@ -33,7 +36,10 @@ const totalPercentage = computed(() =>
 )
 
 function addTobacco(tobaccoId: string) {
-  if (selectedIds.value.includes(tobaccoId) || props.modelValue.length >= 3) {
+  if (
+    selectedIds.value.includes(tobaccoId) ||
+    props.modelValue.length >= maxSelections.value
+  ) {
     return
   }
 
@@ -134,7 +140,7 @@ function rebalance(items: BlendComponentInput[]) {
           <button
             class="button button--secondary button--full-width-mobile"
             type="button"
-            :disabled="selectedIds.includes(tobacco.id) || selectedIds.length >= 3"
+            :disabled="selectedIds.includes(tobacco.id) || selectedIds.length >= maxSelections"
             @click="addTobacco(tobacco.id)"
           >
             {{ selectedIds.includes(tobacco.id) ? 'Уже в миксе' : 'Добавить' }}
@@ -145,7 +151,7 @@ function rebalance(items: BlendComponentInput[]) {
       <aside class="selection-card">
         <div>
           <p class="section-label">Выбранные вкусы</p>
-          <h4>{{ modelValue.length }} / 3</h4>
+          <h4>{{ modelValue.length }} / {{ maxSelections }}</h4>
           <p class="section-copy">Сумма процентов: {{ totalPercentage }}%</p>
         </div>
 
@@ -184,7 +190,7 @@ function rebalance(items: BlendComponentInput[]) {
         </div>
 
         <p v-else class="section-copy">
-          Добавьте до трёх вкусов и настройте процентное соотношение.
+          Добавьте до {{ maxSelections }} вкусов и настройте процентное соотношение.
         </p>
       </aside>
     </div>
