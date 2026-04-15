@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 
 import { useAppDataStore } from '@/stores/app-data'
@@ -12,6 +12,7 @@ const sessionStore = useSessionStore()
 const appDataStore = useAppDataStore()
 
 const bootstrappedForUserId = ref<string | null>(null)
+const isMobileNavigationOpen = ref(false)
 
 const roleLabels = {
   admin: 'Администратор',
@@ -61,6 +62,10 @@ const isAuthRoute = computed(() => route.name === 'auth')
 
 const isLoadingSession = computed(
   () => sessionStore.isAuthenticated && appDataStore.isBootstrapping && !isAuthRoute.value,
+)
+
+const shouldShowMobileMenuButton = computed(
+  () => !isAuthRoute.value && navigationItems.value.length > 0,
 )
 
 watch(
@@ -154,10 +159,40 @@ watch(
   { immediate: true },
 )
 
+watch(
+  () => route.fullPath,
+  () => {
+    closeMobileNavigation()
+  },
+)
+
+watch(isMobileNavigationOpen, (isOpen) => {
+  if (typeof document === 'undefined') {
+    return
+  }
+
+  document.body.style.overflow = isOpen ? 'hidden' : ''
+})
+
+onBeforeUnmount(() => {
+  if (typeof document !== 'undefined') {
+    document.body.style.overflow = ''
+  }
+})
+
+function openMobileNavigation() {
+  isMobileNavigationOpen.value = true
+}
+
+function closeMobileNavigation() {
+  isMobileNavigationOpen.value = false
+}
+
 async function handleLogout() {
   sessionStore.logout()
   appDataStore.reset()
   bootstrappedForUserId.value = null
+  closeMobileNavigation()
   await router.push('/auth')
 }
 
@@ -192,31 +227,91 @@ async function openNotification(orderId: string, notificationId: string) {
       </button>
     </aside>
 
+    <div
+      v-if="isMobileNavigationOpen && shouldShowMobileMenuButton"
+      class="app-backdrop"
+      aria-hidden="true"
+      @click="closeMobileNavigation"
+    />
+
     <header class="topbar">
-      <div class="topbar__content">
-        <p class="eyebrow">Hookah Lounge Control</p>
-        <h1>Адаптивная панель кальянной</h1>
-        <p class="section-copy">
-          Управление пользователями, справочниками, заказами и быстрым добавлением табака в одном
-          интерфейсе.
-        </p>
+      <div class="topbar__header">
+        <div class="topbar__content">
+          <p class="eyebrow">Hookah Lounge Control</p>
+          <h1>Адаптивная панель кальянной</h1>
+          <p class="section-copy">
+            Управление пользователями, справочниками, заказами и быстрым добавлением табака в одном интерфейсе.
+          </p>
+        </div>
+
+        <div class="topbar__actions">
+          <div v-if="sessionStore.currentUser" class="topbar__meta topbar__meta--desktop">
+            <span class="pill">{{ currentRoleLabel }}</span>
+            <span v-if="sessionStore.currentUser.isApproved === false" class="pill pill--muted">
+              Ожидает апрув
+            </span>
+            <span class="pill pill--muted">{{ sessionStore.currentUser.login }}</span>
+            <button class="button button--ghost" type="button" @click="handleLogout">Выйти</button>
+          </div>
+
+          <button
+            v-if="shouldShowMobileMenuButton"
+            class="button button--ghost mobile-menu-button"
+            type="button"
+            :aria-expanded="isMobileNavigationOpen"
+            aria-controls="mobile-navigation"
+            @click="openMobileNavigation"
+          >
+            Меню
+          </button>
+        </div>
       </div>
 
-      <nav v-if="navigationItems.length > 0" class="navigation" aria-label="Основная навигация">
+      <nav v-if="navigationItems.length > 0" class="navigation navigation--desktop" aria-label="Основная навигация">
         <RouterLink v-for="item in navigationItems" :key="item.to" :to="item.to" class="navigation__link">
           {{ item.name }}
         </RouterLink>
       </nav>
-
-      <div v-if="sessionStore.currentUser" class="topbar__meta">
-        <span class="pill">{{ currentRoleLabel }}</span>
-        <span v-if="sessionStore.currentUser.isApproved === false" class="pill pill--muted">
-          Ожидает апрув
-        </span>
-        <span class="pill pill--muted">{{ sessionStore.currentUser.login }}</span>
-        <button class="button button--ghost" type="button" @click="handleLogout">Выйти</button>
-      </div>
     </header>
+
+    <aside
+      v-if="shouldShowMobileMenuButton"
+      id="mobile-navigation"
+      class="navigation-drawer"
+      :class="{ 'navigation-drawer--open': isMobileNavigationOpen }"
+      aria-label="Мобильная навигация"
+    >
+      <div class="navigation-drawer__header">
+        <div>
+          <p class="section-label">Навигация</p>
+          <h2>Рабочее меню</h2>
+        </div>
+        <button class="button button--ghost" type="button" @click="closeMobileNavigation">
+          Закрыть
+        </button>
+      </div>
+
+      <div v-if="sessionStore.currentUser" class="navigation-drawer__meta">
+        <span class="pill">{{ currentRoleLabel }}</span>
+        <span class="pill pill--muted">{{ sessionStore.currentUser.login }}</span>
+      </div>
+
+      <nav class="navigation navigation--drawer">
+        <RouterLink
+          v-for="item in navigationItems"
+          :key="item.to"
+          :to="item.to"
+          class="navigation__link navigation__link--drawer"
+          @click="closeMobileNavigation"
+        >
+          {{ item.name }}
+        </RouterLink>
+      </nav>
+
+      <div v-if="sessionStore.currentUser" class="navigation-drawer__footer">
+        <button class="button button--primary" type="button" @click="handleLogout">Выйти из аккаунта</button>
+      </div>
+    </aside>
 
     <main class="content">
       <section

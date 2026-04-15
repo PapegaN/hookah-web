@@ -110,6 +110,8 @@ a {
 }
 
 .topbar__content,
+.topbar__header,
+.topbar__actions,
 .topbar__meta,
 .panel__header,
 .editor-card__header,
@@ -123,6 +125,15 @@ a {
 
 .topbar__content {
   flex-direction: column;
+}
+
+.topbar__header {
+  align-items: center;
+}
+
+.topbar__actions {
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .topbar h1,
@@ -186,6 +197,18 @@ a {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.navigation--drawer {
+  display: grid;
+  gap: 12px;
+}
+
+.navigation__link--drawer {
+  width: 100%;
+  justify-content: flex-start;
+  border-radius: 22px;
+  padding-inline: 18px;
 }
 
 .navigation__link,
@@ -680,6 +703,70 @@ select.input:focus {
   pointer-events: none;
 }
 
+.app-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 24;
+  background: rgba(20, 16, 13, 0.34);
+  backdrop-filter: blur(3px);
+}
+
+.mobile-menu-button,
+.navigation-drawer {
+  display: none;
+}
+
+.navigation-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 30;
+  width: min(360px, calc(100vw - 24px));
+  height: 100dvh;
+  padding: 18px;
+  border-left: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(255, 252, 247, 0.98), rgba(247, 238, 225, 0.96)),
+    radial-gradient(circle at top right, rgba(178, 100, 45, 0.1), transparent 28%);
+  box-shadow: -24px 0 60px rgba(20, 16, 13, 0.18);
+  transform: translateX(110%);
+  transition: transform 180ms ease;
+  overflow-y: auto;
+}
+
+.navigation-drawer--open {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 16px;
+  transform: translateX(0);
+}
+
+.navigation-drawer__header,
+.navigation-drawer__meta,
+.navigation-drawer__footer {
+  display: grid;
+  gap: 10px;
+}
+
+@media (max-width: 1200px) {
+  .app-shell {
+    padding: 16px 12px 36px;
+  }
+
+  .panel,
+  .metric-card,
+  .task-card,
+  .editor-card,
+  .selection-card,
+  .catalog-card,
+  .auth-card,
+  .auth-hero,
+  .status-banner,
+  .topbar {
+    border-radius: 24px;
+  }
+}
+
 @media (max-width: 1080px) {
   .auth-layout,
   .hero-card,
@@ -688,42 +775,69 @@ select.input:focus {
     grid-template-columns: 1fr;
   }
 
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .selection-card {
     position: static;
   }
 }
 
-@media (max-width: 768px) {
-  .app-shell {
-    padding: 12px 10px 28px;
-  }
-
+@media (max-width: 960px) {
   .topbar {
     position: sticky;
     top: 0;
-    z-index: 5;
-    border-radius: 0 0 24px 24px;
-    padding: 14px 12px 16px;
+    z-index: 23;
+    padding: 14px;
+  }
+
+  .topbar__header {
+    align-items: flex-start;
+  }
+
+  .topbar__actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .topbar__meta--desktop,
+  .navigation--desktop {
+    display: none;
+  }
+
+  .mobile-menu-button,
+  .navigation-drawer {
+    display: grid;
+  }
+
+  .mobile-menu-button {
+    min-width: 110px;
+  }
+
+  .notification-stack {
+    position: static;
+    width: 100%;
+    margin-bottom: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-shell {
+    padding: 10px 10px 24px;
   }
 
   .topbar__content,
-  .topbar__meta,
+  .topbar__header,
+  .topbar__actions,
   .panel__header,
   .editor-card__header,
   .demo-panel__header {
     flex-direction: column;
-  }
-
-  .navigation {
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    padding-bottom: 4px;
-    margin-inline: -2px;
-    scrollbar-width: none;
-  }
-
-  .navigation::-webkit-scrollbar {
-    display: none;
   }
 
   .navigation__link,
@@ -751,12 +865,6 @@ select.input:focus {
 
   .selection-list__item {
     flex-direction: column;
-  }
-
-  .notification-stack {
-    position: static;
-    width: 100%;
-    margin-bottom: 16px;
   }
 
   .table-shell {
@@ -821,5 +929,39 @@ select.input:focus {
   .scanner-preview,
   .scanner-preview__video {
     min-height: 200px;
+  }
+
+  .navigation-drawer {
+    width: min(340px, calc(100vw - 12px));
+    padding: 16px 14px 22px;
+  }
+}
+
+@media (max-width: 560px) {
+  .app-shell {
+    padding: 8px 8px 22px;
+  }
+
+  .topbar,
+  .panel,
+  .metric-card,
+  .task-card,
+  .editor-card,
+  .selection-card,
+  .catalog-card,
+  .auth-card,
+  .auth-hero,
+  .status-banner {
+    padding: 14px;
+    border-radius: 20px;
+  }
+
+  .grid,
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .navigation-drawer {
+    width: calc(100vw - 8px);
   }
 }
