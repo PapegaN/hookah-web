@@ -15,6 +15,16 @@ const errorMessage = ref<string | null>(null)
 const itemId = computed(() => String(route.params.itemId ?? ''))
 const section = computed(() => String(route.params.section ?? '') as PublicForumSectionKey)
 
+const overviewParameters = computed(() => item.value?.parameters.slice(0, 4) ?? [])
+const additionalParameters = computed(() => item.value?.parameters.slice(4) ?? [])
+const reviewAverageLabel = computed(() => {
+  if (!item.value) {
+    return '0.0'
+  }
+
+  return item.value.ratingAverage.toFixed(1)
+})
+
 async function loadItem() {
   isLoading.value = true
   errorMessage.value = null
@@ -84,18 +94,48 @@ watch([section, itemId], () => {
         <div class="stack">
           <p class="section-copy">{{ item.description }}</p>
 
-          <div class="pill-row">
-            <span class="pill">Оценка: {{ item.ratingAverage }}/5</span>
-            <span class="pill pill--muted">Отзывы: {{ item.reviewCount }}</span>
-            <span class="pill pill--muted">Комментарии: {{ item.commentCount }}</span>
+          <div class="forum-stat-grid">
+            <article class="forum-stat-card">
+              <span>Средняя оценка</span>
+              <strong>{{ reviewAverageLabel }}/5</strong>
+              <p>Сводная оценка по отзывам пользователей.</p>
+            </article>
+
+            <article class="forum-stat-card">
+              <span>Отзывы</span>
+              <strong>{{ item.reviewCount }}</strong>
+              <p>Подробный опыт эксплуатации и впечатления.</p>
+            </article>
+
+            <article class="forum-stat-card">
+              <span>Комментарии</span>
+              <strong>{{ item.commentCount }}</strong>
+              <p>Короткие обсуждения и вопросы по изделию.</p>
+            </article>
           </div>
 
           <div class="forum-parameter-list">
-            <div v-for="parameter in item.parameters" :key="parameter.label" class="forum-parameter">
+            <div v-for="parameter in overviewParameters" :key="parameter.label" class="forum-parameter">
               <span>{{ parameter.label }}</span>
               <strong>{{ parameter.value }}</strong>
             </div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section v-if="additionalParameters.length > 0" class="panel">
+      <div class="panel__header panel__header--compact-mobile">
+        <div>
+          <p class="section-label">Параметры</p>
+          <h3>Дополнительные характеристики</h3>
+        </div>
+      </div>
+
+      <div class="forum-parameter-list">
+        <div v-for="parameter in additionalParameters" :key="parameter.label" class="forum-parameter">
+          <span>{{ parameter.label }}</span>
+          <strong>{{ parameter.value }}</strong>
         </div>
       </div>
     </section>
@@ -106,6 +146,7 @@ watch([section, itemId], () => {
           <p class="section-label">Обсуждение</p>
           <h3>Комментарии по изделию</h3>
         </div>
+        <span class="pill pill--muted">Публичное чтение</span>
       </div>
 
       <div class="timeline-list">
@@ -148,9 +189,11 @@ watch([section, itemId], () => {
 
     <section class="panel forum-cta-panel">
       <p class="section-label">Следующий этап</p>
-      <h3>Публикация комментариев и отзывов будет добавлена следующим шагом</h3>
+      <h3>Карточка готова для подключения реальных комментариев, отзывов и фото</h3>
       <p class="section-copy">
-        Каркас уже готов: карточка изделия разделена на параметры, обсуждение и опыт эксплуатации. Дальше можно подключать реальное хранение комментариев, фото и модерацию.
+        Сейчас публичная часть уже показывает структуру будущего форума: параметры, обсуждение и
+        опыт эксплуатации. Следующим шагом можно переносить это на реальные таблицы форума и
+        привязывать фотографии через media storage.
       </p>
     </section>
   </section>

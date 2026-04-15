@@ -9,12 +9,49 @@ import type {
   PublicForumSectionKey,
 } from '@/types/forum'
 
+type ForumSortMode = 'popular' | 'discussed' | 'title'
+
 const catalog = ref<PublicForumCatalogSnapshot | null>(null)
 const isLoading = ref(true)
 const errorMessage = ref<string | null>(null)
 const activeSection = ref<'all' | PublicForumSectionKey>('all')
 const activeBrand = ref('all')
 const searchQuery = ref('')
+const sortMode = ref<ForumSortMode>('popular')
+
+const forumStats = computed(() => {
+  if (!catalog.value) {
+    return {
+      items: 0,
+      brands: 0,
+      reviews: 0,
+      comments: 0,
+    }
+  }
+
+  return {
+    items: catalog.value.items.length,
+    brands: new Set(catalog.value.items.map((item) => item.brand)).size,
+    reviews: catalog.value.items.reduce((sum, item) => sum + item.reviewCount, 0),
+    comments: catalog.value.items.reduce((sum, item) => sum + item.commentCount, 0),
+  }
+})
+
+const activeSectionMeta = computed(() => {
+  if (!catalog.value || activeSection.value === 'all') {
+    return {
+      title: 'Все разделы',
+      description: 'Открытый каталог по табакам, кальянам, чашкам и аксессуарам.',
+    }
+  }
+
+  return (
+    catalog.value.sections.find((section) => section.key === activeSection.value) ?? {
+      title: 'Раздел',
+      description: 'Подборка карточек по выбранному направлению.',
+    }
+  )
+})
 
 const visibleBrands = computed(() => {
   if (!catalog.value) {
@@ -37,20 +74,40 @@ const visibleItems = computed(() => {
     return []
   }
 
-  return catalog.value.items.filter((item) => {
+  const normalizedSearch = searchQuery.value.trim().toLowerCase()
+
+  const filtered = catalog.value.items.filter((item) => {
     const matchesSection =
       activeSection.value === 'all' ? true : item.section === activeSection.value
     const matchesBrand = activeBrand.value === 'all' ? true : item.brand === activeBrand.value
     const matchesSearch =
-      searchQuery.value.trim().length === 0
+      normalizedSearch.length === 0
         ? true
-        : `${item.title} ${item.subtitle} ${item.description}`
+        : `${item.title} ${item.subtitle} ${item.description} ${item.parameters.map((parameter) => parameter.value).join(' ')}`
             .toLowerCase()
-            .includes(searchQuery.value.trim().toLowerCase())
+            .includes(normalizedSearch)
 
     return matchesSection && matchesBrand && matchesSearch
   })
+
+  return [...filtered].sort((left, right) => {
+    if (sortMode.value === 'title') {
+      return left.title.localeCompare(right.title, 'ru')
+    }
+
+    if (sortMode.value === 'discussed') {
+      return right.commentCount - left.commentCount || right.reviewCount - left.reviewCount
+    }
+
+    return (
+      right.ratingAverage - left.ratingAverage ||
+      right.reviewCount - left.reviewCount ||
+      left.title.localeCompare(right.title, 'ru')
+    )
+  })
 })
+
+const featuredItems = computed(() => visibleItems.value.slice(0, 3))
 
 onMounted(async () => {
   try {
@@ -81,17 +138,31 @@ function getPlaceholderLabel(item: PublicForumCatalogItem) {
 
 <template>
   <section class="hero-card forum-hero">
-    <div>
+    <div class="stack">
       <p class="section-label">Public forum</p>
-      <h2>Публичный каталог табаков, кальянов и аксессуаров</h2>
+      <h2>Открытый каталог табаков, кальянов и аксессуаров</h2>
       <p class="section-copy">
-        Открытый раздел без авторизации: по брендам, моделям и карточкам изделий с параметрами, обсуждением и опытом эксплуатации.
+        Публичный раздел без авторизации: карточки изделий по брендам и моделям, основные
+        параметры, обсуждение и опыт эксплуатации в одном месте.
       </p>
+      <div class="pill-row">
+        <span class="pill">Карточек: {{ forumStats.items }}</span>
+        <span class="pill pill--muted">Брендов: {{ forumStats.brands }}</span>
+        <span class="pill pill--muted">Отзывы: {{ forumStats.reviews }}</span>
+        <span class="pill pill--muted">Комментарии: {{ forumStats.comments }}</span>
+      </div>
     </div>
 
-    <div class="hero-card__badge">
-      <span>{{ catalog?.items.length ?? 0 }}</span>
-      <p>карточек уже доступно для просмотра</p>
+    <div class="forum-hero__aside">
+      <article class="forum-stat-card">
+        <span>Точка входа</span>
+        <strong>{{ activeSectionMeta.title }}</strong>
+        <p>{{ activeSectionMeta.description }}</p>
+      </article>
+
+      <RouterLink class="button button--ghost button--full-width-mobile" to="/auth">
+        Войти в рабочую панель
+      </RouterLink>
     </div>
   </section>
 
@@ -99,31 +170,33 @@ function getPlaceholderLabel(item: PublicForumCatalogItem) {
     <div class="panel__header panel__header--compact-mobile">
       <div>
         <p class="section-label">Разделы</p>
-        <h3>Навигация по каталогу</h3>
+        <h3>Навигация по форуму</h3>
       </div>
-      <RouterLink class="button button--ghost button--full-width-mobile" to="/auth">
-        Войти в панель
-      </RouterLink>
+      <span class="pill pill--muted">Публичный просмотр без авторизации</span>
     </div>
 
-    <div class="tab-row tab-row--scrollable">
+    <div class="forum-section-grid">
       <button
-        class="tab-row__button"
-        :class="{ 'tab-row__button--active': activeSection === 'all' }"
+        class="forum-section-card"
+        :class="{ 'forum-section-card--active': activeSection === 'all' }"
         type="button"
         @click="setSection('all')"
       >
-        Всё
+        <strong>Все разделы</strong>
+        <p>Общий каталог с поиском по всем карточкам.</p>
       </button>
+
       <button
         v-for="section in catalog?.sections ?? []"
         :key="section.key"
-        class="tab-row__button"
-        :class="{ 'tab-row__button--active': activeSection === section.key }"
+        class="forum-section-card"
+        :class="{ 'forum-section-card--active': activeSection === section.key }"
         type="button"
         @click="setSection(section.key)"
       >
-        {{ section.title }} · {{ section.itemCount }}
+        <strong>{{ section.title }}</strong>
+        <p>{{ section.description }}</p>
+        <span>{{ section.itemCount }} карточек</span>
       </button>
     </div>
 
@@ -145,6 +218,15 @@ function getPlaceholderLabel(item: PublicForumCatalogItem) {
           placeholder="Например: Darkside, Hoob, phunnel, 25 мм"
         />
       </label>
+
+      <label class="field">
+        <span>Сортировка</span>
+        <select v-model="sortMode" class="input">
+          <option value="popular">По рейтингу</option>
+          <option value="discussed">По обсуждениям</option>
+          <option value="title">По названию</option>
+        </select>
+      </label>
     </div>
   </section>
 
@@ -159,46 +241,78 @@ function getPlaceholderLabel(item: PublicForumCatalogItem) {
     <p>{{ errorMessage }}</p>
   </section>
 
-  <section v-else-if="visibleItems.length > 0" class="forum-card-grid">
-    <RouterLink
-      v-for="item in visibleItems"
-      :key="item.id"
-      class="panel forum-card"
-      :to="`/forum/${item.section}/${item.id}`"
-    >
-      <div class="forum-card__media">
-        <img v-if="item.imageUrl" :src="item.imageUrl" :alt="item.title" />
-        <div v-else class="forum-card__placeholder">
-          <strong>{{ getPlaceholderLabel(item) }}</strong>
-          <span>Фото появится позже</span>
+  <template v-else-if="visibleItems.length > 0">
+    <section class="panel">
+      <div class="panel__header panel__header--compact-mobile">
+        <div>
+          <p class="section-label">Подборка</p>
+          <h3>Что посмотреть в первую очередь</h3>
         </div>
       </div>
 
-      <div class="stack">
-        <div>
-          <p class="section-label">{{ item.brand }} / {{ item.model }}</p>
-          <h3>{{ item.title }}</h3>
-          <p class="section-copy">{{ item.description }}</p>
-        </div>
+      <div class="forum-featured-grid">
+        <RouterLink
+          v-for="item in featuredItems"
+          :key="item.id"
+          class="forum-featured-card"
+          :to="`/forum/${item.section}/${item.id}`"
+        >
+          <span class="section-label">{{ item.brand }}</span>
+          <strong>{{ item.title }}</strong>
+          <p>{{ item.description }}</p>
+          <div class="pill-row">
+            <span class="pill">Рейтинг: {{ item.ratingAverage }}/5</span>
+            <span class="pill pill--muted">Отзывы: {{ item.reviewCount }}</span>
+          </div>
+        </RouterLink>
+      </div>
+    </section>
 
-        <div class="pill-row">
-          <span class="pill">Оценка: {{ item.ratingAverage }}/5</span>
-          <span class="pill pill--muted">Отзывы: {{ item.reviewCount }}</span>
-          <span class="pill pill--muted">Комментарии: {{ item.commentCount }}</span>
-        </div>
-
-        <div class="forum-parameter-list">
-          <div v-for="parameter in item.parameters.slice(0, 3)" :key="parameter.label" class="forum-parameter">
-            <span>{{ parameter.label }}</span>
-            <strong>{{ parameter.value }}</strong>
+    <section class="forum-card-grid">
+      <RouterLink
+        v-for="item in visibleItems"
+        :key="item.id"
+        class="panel forum-card"
+        :to="`/forum/${item.section}/${item.id}`"
+      >
+        <div class="forum-card__media">
+          <img v-if="item.imageUrl" :src="item.imageUrl" :alt="item.title" />
+          <div v-else class="forum-card__placeholder">
+            <strong>{{ getPlaceholderLabel(item) }}</strong>
+            <span>Фото добавим позже</span>
           </div>
         </div>
-      </div>
-    </RouterLink>
-  </section>
+
+        <div class="stack">
+          <div>
+            <p class="section-label">{{ item.brand }} / {{ item.model }}</p>
+            <h3>{{ item.title }}</h3>
+            <p class="section-copy">{{ item.description }}</p>
+          </div>
+
+          <div class="pill-row">
+            <span class="pill">Оценка: {{ item.ratingAverage }}/5</span>
+            <span class="pill pill--muted">Отзывы: {{ item.reviewCount }}</span>
+            <span class="pill pill--muted">Комментарии: {{ item.commentCount }}</span>
+          </div>
+
+          <div class="forum-parameter-list">
+            <div
+              v-for="parameter in item.parameters.slice(0, 3)"
+              :key="parameter.label"
+              class="forum-parameter"
+            >
+              <span>{{ parameter.label }}</span>
+              <strong>{{ parameter.value }}</strong>
+            </div>
+          </div>
+        </div>
+      </RouterLink>
+    </section>
+  </template>
 
   <section v-else class="panel empty-state">
     <p class="section-label">Ничего не найдено</p>
-    <h3>Попробуйте сменить раздел или фильтр по бренду</h3>
+    <h3>Попробуйте сменить раздел, бренд или поисковый запрос</h3>
   </section>
 </template>
