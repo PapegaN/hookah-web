@@ -768,7 +768,9 @@ select.input:focus {
 
 .scanner-layout,
 .scanner-grid,
-.scanner-hero {
+.scanner-hero,
+.forum-card-grid,
+.forum-detail-layout {
   display: grid;
   gap: 18px;
 }
@@ -776,6 +778,103 @@ select.input:focus {
 .scanner-grid {
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
   align-items: start;
+}
+
+.forum-card-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.forum-card {
+  display: grid;
+  gap: 16px;
+}
+
+.forum-card__media,
+.forum-detail-media {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(255, 252, 247, 0.96), rgba(248, 239, 228, 0.92)),
+    radial-gradient(circle at top left, rgba(21, 53, 74, 0.08), transparent 30%);
+}
+
+.forum-card__media img,
+.forum-detail-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.forum-card__media {
+  min-height: 220px;
+}
+
+.forum-detail-media {
+  min-height: 320px;
+}
+
+.forum-card__placeholder {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  min-height: 100%;
+  padding: 24px;
+  text-align: center;
+  color: var(--text-soft);
+}
+
+.forum-card__placeholder strong {
+  display: inline-grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 999px;
+  background: rgba(21, 53, 74, 0.1);
+  color: var(--surface-dark);
+  font-size: 1.4rem;
+}
+
+.forum-card__placeholder--large strong {
+  width: 92px;
+  height: 92px;
+  font-size: 1.8rem;
+}
+
+.forum-parameter-list {
+  display: grid;
+  gap: 12px;
+}
+
+.forum-parameter {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.forum-parameter span {
+  color: var(--text-soft);
+}
+
+.forum-detail-layout {
+  grid-template-columns: minmax(280px, 0.95fr) minmax(0, 1.1fr);
+  align-items: start;
+}
+
+.forum-hero {
+  align-items: center;
+}
+
+.forum-cta-panel {
+  background:
+    linear-gradient(180deg, rgba(255, 252, 247, 0.96), rgba(248, 239, 228, 0.92)),
+    radial-gradient(circle at top right, rgba(178, 100, 45, 0.1), transparent 26%);
 }
 
 .scanner-preview {
@@ -873,7 +972,8 @@ select.input:focus {
   .auth-layout,
   .hero-card,
   .picker-layout,
-  .scanner-grid {
+  .scanner-grid,
+  .forum-detail-layout {
     grid-template-columns: 1fr;
   }
 

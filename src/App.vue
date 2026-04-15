@@ -21,11 +21,21 @@ const roleLabels = {
 }
 
 const navigationItems = computed(() => {
+  if (!sessionStore.currentUser) {
+    return [
+      { name: 'Форум', to: '/forum' },
+      { name: 'Войти', to: '/auth' },
+    ]
+  }
+
   if (sessionStore.currentUser?.isApproved === false) {
     return [{ name: 'Ожидание доступа', to: '/pending-approval' }]
   }
 
-  const sharedItems = [{ name: 'Обзор', to: '/' }]
+  const sharedItems = [
+    { name: 'Форум', to: '/forum' },
+    { name: 'Обзор', to: '/workspace' },
+  ]
 
   switch (sessionStore.currentUser?.role) {
     case 'admin':

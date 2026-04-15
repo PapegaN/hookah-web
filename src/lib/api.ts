@@ -19,6 +19,11 @@ import type {
   UpdateUserPayload,
   UpsertReferencePayload,
 } from '@/types/app'
+import type {
+  PublicForumCatalogSnapshot,
+  PublicForumItemDetail,
+  PublicForumSectionKey,
+} from '@/types/forum'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v1'
 
@@ -102,6 +107,12 @@ export class TimeoutError extends Error {
 export const api = {
   getDemoAccounts() {
     return request<DemoAccountsResponse>('/auth/demo-accounts')
+  },
+  getPublicForumCatalog() {
+    return request<PublicForumCatalogSnapshot>('/public/forum')
+  },
+  getPublicForumItem(section: PublicForumSectionKey, itemId: string) {
+    return request<PublicForumItemDetail>(`/public/forum/${section}/${itemId}`)
   },
   login(payload: { login: string; password: string }) {
     return request<AuthResponse>('/auth/login', {

@@ -40,7 +40,7 @@ async function submitLogin() {
     return
   }
 
-  const redirectTarget = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
+  const redirectTarget = typeof route.query.redirect === 'string' ? route.query.redirect : '/workspace'
   await router.push(redirectTarget)
 }
 

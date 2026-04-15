@@ -27,13 +27,33 @@ function getDefaultRoute(role?: UserRole, isApproved = true) {
     case 'client':
       return '/client/order/new'
     default:
-      return '/'
+      return '/forum'
   }
 }
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
+    redirect: '/forum',
+  },
+  {
+    path: '/forum',
+    name: 'public-forum',
+    component: () => import('@/views/PublicForumView.vue'),
+    meta: {
+      requiresAuth: false,
+    },
+  },
+  {
+    path: '/forum/:section/:itemId',
+    name: 'public-forum-item',
+    component: () => import('@/views/PublicForumItemView.vue'),
+    meta: {
+      requiresAuth: false,
+    },
+  },
+  {
+    path: '/workspace',
     name: 'dashboard',
     component: () => import('@/views/DashboardView.vue'),
     meta: {
@@ -172,7 +192,7 @@ router.beforeEach((to) => {
   if (!sessionStore.isAuthenticated) {
     return {
       name: 'auth',
-      query: to.fullPath !== '/' ? { redirect: to.fullPath } : undefined,
+      query: to.fullPath !== '/forum' ? { redirect: to.fullPath } : undefined,
     }
   }
 

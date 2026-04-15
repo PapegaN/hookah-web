@@ -20,7 +20,7 @@ function getApprovedRoute() {
     case 'client':
       return '/client/order/new'
     default:
-      return '/'
+      return '/workspace'
   }
 }
 
