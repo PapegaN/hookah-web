@@ -766,6 +766,10 @@ select.input:focus {
   text-align: center;
 }
 
+.empty-state--left {
+  text-align: left;
+}
+
 .scanner-layout,
 .scanner-grid,
 .scanner-hero,
@@ -957,6 +961,23 @@ select.input:focus {
   background:
     linear-gradient(180deg, rgba(255, 252, 247, 0.96), rgba(248, 239, 228, 0.92)),
     radial-gradient(circle at top right, rgba(178, 100, 45, 0.1), transparent 26%);
+}
+
+.forum-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.forum-inline-photo {
+  display: block;
+  width: 100%;
+  min-height: 140px;
+  max-height: 220px;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
 }
 
 .scanner-preview {

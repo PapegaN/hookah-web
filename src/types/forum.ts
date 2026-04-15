@@ -15,6 +15,7 @@ export interface PublicForumComment {
   authorName: string
   createdAt: string
   text: string
+  photoUrls: string[]
 }
 
 export interface PublicForumReview {

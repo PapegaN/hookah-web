@@ -149,14 +149,29 @@ watch([section, itemId], () => {
         <span class="pill pill--muted">Публичное чтение</span>
       </div>
 
-      <div class="timeline-list">
+      <div v-if="item.comments.length > 0" class="timeline-list">
         <article v-for="comment in item.comments" :key="comment.id" class="timeline-item">
           <div class="timeline-item__header">
             <strong>{{ comment.authorName }}</strong>
             <span>{{ formatDateTime(comment.createdAt) }}</span>
           </div>
           <p>{{ comment.text }}</p>
+
+          <div v-if="comment.photoUrls.length > 0" class="forum-photo-grid">
+            <img
+              v-for="photoUrl in comment.photoUrls"
+              :key="photoUrl"
+              :src="photoUrl"
+              :alt="`Изображение в комментарии ${comment.authorName}`"
+              class="forum-inline-photo"
+            />
+          </div>
         </article>
+      </div>
+      <div v-else class="empty-state empty-state--left">
+        <p class="section-label">Пока пусто</p>
+        <h3>Комментариев ещё нет</h3>
+        <p class="section-copy">Эта карточка уже готова к живому обсуждению, но первые сообщения ещё не опубликованы.</p>
       </div>
     </section>
 
@@ -168,7 +183,7 @@ watch([section, itemId], () => {
         </div>
       </div>
 
-      <div class="timeline-list">
+      <div v-if="item.reviews.length > 0" class="timeline-list">
         <article v-for="review in item.reviews" :key="review.id" class="timeline-item">
           <div class="timeline-item__header">
             <strong>{{ review.authorName }}</strong>
@@ -183,7 +198,22 @@ watch([section, itemId], () => {
           </div>
 
           <p>{{ review.text }}</p>
+
+          <div v-if="review.photoUrls.length > 0" class="forum-photo-grid">
+            <img
+              v-for="photoUrl in review.photoUrls"
+              :key="photoUrl"
+              :src="photoUrl"
+              :alt="`Изображение в отзыве ${review.authorName}`"
+              class="forum-inline-photo"
+            />
+          </div>
         </article>
+      </div>
+      <div v-else class="empty-state empty-state--left">
+        <p class="section-label">Пока пусто</p>
+        <h3>Отзывов ещё нет</h3>
+        <p class="section-copy">Здесь появится подробный опыт эксплуатации, как только пользователи начнут оставлять отзывы.</p>
       </div>
     </section>
 
