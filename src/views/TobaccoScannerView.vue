@@ -414,7 +414,7 @@ onBeforeUnmount(() => {
 
     <div class="scanner-grid">
       <section class="editor-card scanner-card">
-        <div class="editor-card__header">
+        <div class="editor-card__header editor-card__header--stack-mobile">
           <div>
             <p class="section-label">Camera</p>
             <h3>Сканирование упаковки</h3>
@@ -422,14 +422,14 @@ onBeforeUnmount(() => {
           <div class="pill-row">
             <button
               v-if="canUseLiveScanner"
-              class="button button--primary"
+              class="button button--primary button--full-width-mobile"
               type="button"
               :disabled="isStartingCamera || isScanning"
               @click="startCameraScanner"
             >
               {{ isScanning ? 'Камера активна' : 'Открыть камеру' }}
             </button>
-            <button v-if="isScanning" class="button button--ghost" type="button" @click="stopScanner">
+            <button v-if="isScanning" class="button button--ghost button--full-width-mobile" type="button" @click="stopScanner">
               Остановить
             </button>
           </div>
@@ -462,7 +462,7 @@ onBeforeUnmount(() => {
         </label>
 
         <div class="pill-row">
-          <button class="button button--secondary" type="button" @click="parseCurrentCode">
+          <button class="button button--secondary button--full-width-mobile" type="button" @click="parseCurrentCode">
             Разобрать текущий код
           </button>
         </div>
@@ -501,7 +501,7 @@ onBeforeUnmount(() => {
       </section>
 
       <section class="editor-card">
-        <div class="editor-card__header">
+        <div class="editor-card__header editor-card__header--stack-mobile">
           <div>
             <p class="section-label">Catalog card</p>
             <h3>Подтверждение карточки</h3>
@@ -572,7 +572,7 @@ onBeforeUnmount(() => {
               <button
                 v-for="tag in activeTobaccoTags"
                 :key="tag.id"
-                class="button"
+                class="button button--full-width-mobile"
                 :class="{ 'button--primary': selectedTagNames.includes(tag.name) }"
                 type="button"
                 @click="toggleTag(tag.name)"
@@ -586,9 +586,9 @@ onBeforeUnmount(() => {
           <p v-if="submitSuccess" class="section-copy">{{ submitSuccess }}</p>
 
           <div class="modal-actions">
-            <button class="button button--ghost" type="button" @click="resetDraft">Очистить</button>
+            <button class="button button--ghost button--full-width-mobile" type="button" @click="resetDraft">Очистить</button>
             <button
-              class="button button--primary"
+              class="button button--primary button--full-width-mobile"
               type="button"
               :disabled="isSubmitting || Boolean(duplicateTobacco)"
               @click="submitTobacco"

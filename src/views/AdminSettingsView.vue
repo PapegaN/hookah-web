@@ -278,12 +278,12 @@ function resolveErrorMessage(error: unknown) {
 
 <template>
   <section class="panel">
-    <div class="panel__header">
+    <div class="panel__header panel__header--compact-mobile">
       <div>
         <p class="section-label">Admin settings</p>
         <h2>Резервные копии, перенос данных и media storage</h2>
       </div>
-      <button class="button button--primary" type="button" :disabled="isBusy" @click="handleExport('backup')">
+      <button class="button button--primary button--full-width-mobile" type="button" :disabled="isBusy" @click="handleExport('backup')">
         Скачать полный backup
       </button>
     </div>
@@ -305,7 +305,7 @@ function resolveErrorMessage(error: unknown) {
   </section>
 
   <section class="panel">
-    <div class="panel__header">
+    <div class="panel__header panel__header--compact-mobile">
       <div>
         <p class="section-label">Media upload</p>
         <h3>Черновой upload flow через MinIO</h3>
@@ -334,7 +334,7 @@ function resolveErrorMessage(error: unknown) {
     </div>
 
     <div class="modal-actions">
-      <button class="button button--primary" type="button" :disabled="isBusy" @click="handleMediaUpload">
+      <button class="button button--primary button--full-width-mobile" type="button" :disabled="isBusy" @click="handleMediaUpload">
         Загрузить в media storage
       </button>
     </div>
@@ -351,7 +351,7 @@ function resolveErrorMessage(error: unknown) {
   </section>
 
   <section class="panel">
-    <div class="panel__header">
+    <div class="panel__header panel__header--compact-mobile">
       <div>
         <p class="section-label">Recent assets</p>
         <h3>Последние media assets</h3>
@@ -371,7 +371,7 @@ function resolveErrorMessage(error: unknown) {
   </section>
 
   <section class="panel">
-    <div class="panel__header">
+    <div class="panel__header panel__header--compact-mobile">
       <div>
         <p class="section-label">Full restore</p>
         <h3>Импорт полного backup</h3>
@@ -386,14 +386,14 @@ function resolveErrorMessage(error: unknown) {
     </div>
 
     <div class="modal-actions">
-      <button class="button button--secondary" type="button" :disabled="isBusy" @click="handleImport('backup')">
+      <button class="button button--secondary button--full-width-mobile" type="button" :disabled="isBusy" @click="handleImport('backup')">
         Импортировать backup
       </button>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel__header">
+    <div class="panel__header panel__header--compact-mobile">
       <div>
         <p class="section-label">Backup audit</p>
         <h3>Журнал backup и restore</h3>
@@ -415,14 +415,14 @@ function resolveErrorMessage(error: unknown) {
     </div>
   </section>
 
-  <section class="stack">
+  <section class="stack settings-resource-grid">
     <article v-for="card in resourceCards" :key="card.resource" class="panel">
-      <div class="panel__header">
+      <div class="panel__header panel__header--compact-mobile">
         <div>
           <p class="section-label">{{ card.resource }}</p>
           <h3>{{ card.title }}</h3>
         </div>
-        <button class="button button--ghost" type="button" :disabled="isBusy" @click="handleExport(card.resource)">
+        <button class="button button--ghost button--full-width-mobile" type="button" :disabled="isBusy" @click="handleExport(card.resource)">
           Экспорт
         </button>
       </div>
@@ -437,7 +437,7 @@ function resolveErrorMessage(error: unknown) {
       </div>
 
       <div class="modal-actions">
-        <button class="button button--primary" type="button" :disabled="isBusy" @click="handleImport(card.resource)">
+        <button class="button button--primary button--full-width-mobile" type="button" :disabled="isBusy" @click="handleImport(card.resource)">
           Импортировать
         </button>
       </div>

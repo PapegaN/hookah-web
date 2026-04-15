@@ -93,7 +93,7 @@ const roleTasks = computed(() => {
   </div>
 
   <section class="panel">
-    <div class="panel__header">
+    <div class="panel__header panel__header--compact-mobile">
       <div>
         <p class="section-label">Следующие действия</p>
         <h3>Что доступно прямо сейчас</h3>

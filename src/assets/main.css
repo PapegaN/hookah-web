@@ -681,7 +681,8 @@ select.input:focus {
 }
 
 .order-meta-grid,
-.order-setup-grid {
+.order-setup-grid,
+.settings-resource-grid {
   display: grid;
   gap: 14px;
 }
@@ -705,6 +706,10 @@ select.input:focus {
 
 .order-setup-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.settings-resource-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
 .setup-summary {
@@ -949,7 +954,8 @@ select.input:focus {
   .stats-grid,
   .participant-list,
   .order-meta-grid,
-  .order-setup-grid {
+  .order-setup-grid,
+  .settings-resource-grid {
     grid-template-columns: 1fr;
   }
 

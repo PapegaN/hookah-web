@@ -88,7 +88,7 @@ function fillDemoAccount(login: string, password: string) {
     </section>
 
     <section class="auth-card">
-      <div class="tab-row">
+      <div class="tab-row tab-row--scrollable">
         <button
           class="tab-row__button"
           :class="{ 'tab-row__button--active': mode === 'login' }"
@@ -125,7 +125,7 @@ function fillDemoAccount(login: string, password: string) {
 
         <p v-if="sessionStore.errorMessage" class="form-error">{{ sessionStore.errorMessage }}</p>
 
-        <button class="button button--primary" type="submit" :disabled="sessionStore.isSubmitting">
+        <button class="button button--primary button--full-width-mobile" type="submit" :disabled="sessionStore.isSubmitting">
           Войти в систему
         </button>
       </form>
@@ -163,7 +163,7 @@ function fillDemoAccount(login: string, password: string) {
 
         <p v-if="sessionStore.errorMessage" class="form-error">{{ sessionStore.errorMessage }}</p>
 
-        <button class="button button--primary" type="submit" :disabled="sessionStore.isSubmitting">
+        <button class="button button--primary button--full-width-mobile" type="submit" :disabled="sessionStore.isSubmitting">
           Отправить на апрув
         </button>
       </form>
